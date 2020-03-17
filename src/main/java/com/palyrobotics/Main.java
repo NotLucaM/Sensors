@@ -12,17 +12,17 @@ public class Main {
 
     private static List<Sensor> mRunningSensors;
     private static KumquatVision camera = new KumquatVision("127.0.0.1", 5802, 5803, 5803, 5803, true, "Vision");
-    private static String order1 = generateOrder(dilate(4), threshold(ColorConstants.kOrangeLowerBoundHSV, ColorConstants.kOrangeUpperBoundHSV), largest(1), "E copy,", "E test,", showContour());
+    private static String order1 = generateOrder(dilate(4), threshold(ColorConstants.kOrangeLowerBoundHSV, ColorConstants.kOrangeUpperBoundHSV), largest(1), "E copy,");
     private static String order2 = generateOrder(erode(2), threshold(new Scalar(1, 2, 3), new Scalar(244, 244 ,244)), largest(1), showContour());
 
     static {
-        camera.setActive(order2);
+        camera.addActive(order2);
         mRunningSensors = List.of(camera);
     }
 
     public static void main(String[] args) throws InterruptedException {
         mRunningSensors.forEach(Sensor::init);
         Thread.sleep(10000);
-        camera.setActive(order1);
+        camera.addActive(order1);
     }
 }

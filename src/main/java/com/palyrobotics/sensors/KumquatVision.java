@@ -3,11 +3,13 @@ package com.palyrobotics.sensors;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
-import com.palyrobotics.util.Address;
 import com.palyrobotics.processing.VisionProcessing;
+import com.palyrobotics.util.Address;
+import com.palyrobotics.util.ColorConstants;
 import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
@@ -23,6 +25,12 @@ public class KumquatVision implements Sensor {
 
     public static final int BUFFER_SIZE = 50000;
     private static final long SLEEP_MS = 100;
+    public static int kCaptureWidth = 1024;
+    public static int kCaptureHeight = 1024;
+
+    static {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
 
     private final Address mImageAddress;
     private final Address mDataAddress;
@@ -32,26 +40,18 @@ public class KumquatVision implements Sensor {
     private final String mWindowName;
     private final Set<VisionProcessing> mProcessers;
     private final Set<VisionProcessing> mRunningProcesses;
-
     private final Mat mCaptureMat;
     private final MatOfByte mStreamMat;
-
+    Logger l = Logger.getGlobal();
     private boolean mShowImage;
+    private boolean mDrawContours;
     private boolean mThreadRunning;
     private int mCaptureFps = 60;
     private Double mTx = null;
     private Double mTy = null;
     private Double mSkew = null;
     private List<MatOfPoint> mContour;
-    public static int kCaptureWidth = 1024;
-    public static int kCaptureHeight = 1024;
     private String mOrder;
-
-    Logger l = Logger.getGlobal();
-
-    static {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-    }
 
     public KumquatVision(String address, Integer imageTcpPort, Integer imageUdpPort, Integer dataTcpPort, Integer dataUdpPort) {
         this(address, imageTcpPort, imageUdpPort, dataTcpPort, dataUdpPort, false, "");
@@ -104,18 +104,16 @@ public class KumquatVision implements Sensor {
         addPipeline(new VisionProcessing(pipeline));
     }
 
-    public void setActive(String pipeline) {
-        setActive(new VisionProcessing(pipeline));
+    public void addActive(String pipeline) {
+        addActive(new VisionProcessing(pipeline));
     }
 
     public void addPipeline(VisionProcessing pipeline) {
         mProcessers.add(pipeline);
     }
 
-    public void setActive(VisionProcessing pipeline) {
-        if (!mProcessers.contains(pipeline)) {
-            mProcessers.add(pipeline);
-        }
+    public void addActive(VisionProcessing pipeline) {
+        mProcessers.add(pipeline);
         mRunningProcesses.add(pipeline);
     }
 
@@ -137,7 +135,7 @@ public class KumquatVision implements Sensor {
                 if (!(hasDataClient || hasImageClient) && !mShowImage) {
                     return;
                 }
-                if (readFrame()) {
+                if (readEditFrame()) {
                     if (hasImageClient) {
                         sendFrameToConnectedClients();
                     } else {
@@ -152,7 +150,7 @@ public class KumquatVision implements Sensor {
 
     private void setUpServers() {
         setUpServer(mImageServer, byte[].class);
-        setUpServer(mDataServer, MatOfPoint.class, null, List.class, Double.class); // TODO: implement the consumer to change the current pipeline efficiently (for control center)
+        setUpServer(mDataServer, MatOfPoint.class, List.class, Double.class); // TODO: implement the consumer to change the current pipeline efficiently (for control center)
     }
 
     private void setUpServer(Server server, BiConsumer<Connection, Object> received, Class... types) {
@@ -189,13 +187,18 @@ public class KumquatVision implements Sensor {
         }
     }
 
-    private boolean readFrame() {
+    private boolean readEditFrame() {
         if (mCapture.read(mCaptureMat)) {
             List<MatOfPoint> contours = new ArrayList<>();
             for (VisionProcessing process : mProcessers) {
                 contours.addAll(process.parseMat(mCaptureMat));
             }
-            if (mShowImage) {
+            if (mDrawContours) {
+                for (int i = 0; i < contours.size(); i++) {
+                    Imgproc.drawContours(mCaptureMat, contours, i, ColorConstants.kRedUpperBoundHSV, 25); // TODO: when the image is greyscale display this in color
+                }
+            }
+            if (mShowImage) { // TODO: remove this and add show it through the network
                 HighGui.imshow(mWindowName, mCaptureMat);
                 HighGui.waitKey(1);
             }
@@ -213,7 +216,7 @@ public class KumquatVision implements Sensor {
                 if (bytes.length < BUFFER_SIZE) {
                     connection.sendTCP(bytes);
                 } else {
-                        System.err.printf("Expected buffer size less than %d, got %d", BUFFER_SIZE, bytes.length);
+                    System.err.printf("Expected buffer size less than %d, got %d", BUFFER_SIZE, bytes.length);
                 }
             }
         }
@@ -225,6 +228,10 @@ public class KumquatVision implements Sensor {
                 connection.sendTCP(List.of(mTx, mTy, mSkew, mContour));
             }
         }
+    }
+
+    public void setDrawContours(boolean drawContours) {
+        this.mDrawContours = drawContours;
     }
 
     @Override
