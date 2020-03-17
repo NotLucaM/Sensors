@@ -14,6 +14,7 @@ import org.opencv.videoio.Videoio;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 public class KumquatVision implements Sensor {
@@ -126,7 +127,17 @@ public class KumquatVision implements Sensor {
 
     private void setUpServers() {
         setUpServer(mImageServer, byte[].class);
-        setUpServer(mDataServer, MatOfPoint.class, List.class, Double.class);
+        setUpServer(mDataServer, MatOfPoint.class, null, List.class, Double.class); // TODO: implement the consumer to change the current pipeline efficiently (for control center)
+    }
+
+    private void setUpServer(Server server, BiConsumer<Connection, Object> received, Class... types) {
+        setUpServer(server, types);
+        server.addListener(new Listener() {
+            @Override
+            public void received(Connection connection, Object o) {
+                received.accept(connection, o);
+            }
+        });
     }
 
     private void setUpServer(Server server, Class... types) {
