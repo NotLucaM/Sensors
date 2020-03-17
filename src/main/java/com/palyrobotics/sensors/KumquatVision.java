@@ -5,6 +5,7 @@ import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 import com.palyrobotics.util.Address;
 import com.palyrobotics.processing.VisionProcessing;
+import jdk.jshell.spi.ExecutionControl;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -102,13 +103,18 @@ public class KumquatVision implements Sensor {
         try {
             l.info("Starting capture thread");
             while (mCapture.isOpened()) {
-                boolean hasClients = mImageServer.getConnections().length > 0;
+                boolean hasImageClient = mImageServer.getConnections().length > 0;
+                boolean hasDataClient = mDataServer.getConnections().length > 0;
                 // If not showing image and not sending to clients - exit thread.
-                if (!hasClients && !mShowImage) {
+                if (!(hasDataClient || hasImageClient) && !mShowImage) {
                     return;
                 }
                 if (readFrame()) {
-                    sendFrameToConnectedClients();
+                    if (hasImageClient) {
+                        sendFrameToConnectedClients();
+                    } else {
+                        sendDataToConnectedClients();
+                    }
                 }
             }
         } finally {
@@ -168,6 +174,15 @@ public class KumquatVision implements Sensor {
                 } else {
                         System.err.printf("Expected buffer size less than %d, got %d", BUFFER_SIZE, bytes.length);
                 }
+            }
+        }
+    }
+
+    private void sendDataToConnectedClients() { // TODO: implement
+        for (Connection connection : mImageServer.getConnections()) {
+            if (connection.isConnected()) {
+                Object data = null;
+                connection.sendTCP(data);
             }
         }
     }
