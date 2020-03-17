@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class VisionProcessing {
 
     private List<Order> mOrders;
-    private double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
+    private static double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
 
     public VisionProcessing() {
     }
@@ -60,7 +60,7 @@ public class VisionProcessing {
 
     // TODO: use Jackson to store in json
 
-    private class Blur implements TransformMat {
+    public static class Blur implements TransformMat {
 
         private Size mSize;
         private Mat mTempMat;
@@ -86,7 +86,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Dilate implements TransformMat {
+    public static class Dilate implements TransformMat {
 
         private Mat mKernel;
         private Mat mTempMat;
@@ -112,7 +112,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Erode implements TransformMat {
+    public static class Erode implements TransformMat {
 
         private Mat mKernel;
         private Mat mTempMat;
@@ -138,7 +138,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Threshold implements TransformMat {
+    public static class Threshold implements TransformMat {
 
         private Scalar mMinColor;
         private Scalar mMaxColor;
@@ -166,7 +166,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Area implements FilterContour {
+    public static class Area implements FilterContour {
 
         private Range mRange;
 
@@ -189,7 +189,7 @@ public class VisionProcessing {
         }
     }
 
-    private class AspectRatio implements FilterContour {
+    public static class AspectRatio implements FilterContour {
 
         private Range mRange;
 
@@ -212,7 +212,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Extent implements FilterContour {
+    public static class Extent implements FilterContour {
 
         private Range mRange;
 
@@ -235,7 +235,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Largest implements FilterContour {
+    public static class Largest implements FilterContour {
 
         private int mAmount;
 
@@ -275,7 +275,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Percent implements FilterContour {
+    public static class Percent implements FilterContour {
 
         private Range mRange;
 
@@ -298,7 +298,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Perimeter implements FilterContour {
+    public static class Perimeter implements FilterContour {
 
         private Range mRange;
 
@@ -325,7 +325,7 @@ public class VisionProcessing {
         }
     }
 
-    private class Solidity implements FilterContour {
+    public static class Solidity implements FilterContour {
 
         private Range mRange;
 
@@ -362,7 +362,7 @@ public class VisionProcessing {
         }
     }
 
-    private class FindContours implements FindContour {
+    public static class FindContours implements FindContour {
 
         @Override
         public List<MatOfPoint> apply(Mat mat) {
@@ -380,7 +380,9 @@ public class VisionProcessing {
 
     public void setOrders(List<Order> orders) {
         if (!verifyOrder(orders)) {
-            throw new IllegalArgumentException("Order does not work");
+            StringBuilder orderName = new StringBuilder();
+            orders.stream().map(order -> order.toString()).forEach(orderName::append);
+            throw new IllegalArgumentException(String.format("Order does not work: %s", orderName.toString()));
         }
         mOrders = orders;
     }
@@ -403,9 +405,16 @@ public class VisionProcessing {
         return contours;
     }
 
-    private boolean verifyOrder(List<Order> orders) {
+    private static boolean verifyOrder(List<Order> orders) {
+        boolean threshold = false;
         for (var order : orders) {
-            if (FindContour.class.isAssignableFrom(order.getClass())) {
+            if (order.getClass().equals(Threshold.class)) {
+                threshold = true;
+            }
+            if (FindContour.class.isAssignableFrom(order.getClass()) && !threshold) {
+                return false;
+            }
+            if (FindContour.class.isAssignableFrom(order.getClass()) && threshold) {
                 return true;
             }
         }

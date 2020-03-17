@@ -3,6 +3,7 @@ package com.palyrobotics.sensors;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import com.palyrobotics.processing.VisionProcessing;
 import com.palyrobotics.processing.VisionProcessing.Order;
 import com.palyrobotics.util.Address;
 import com.palyrobotics.util.ColorConstants;
@@ -39,8 +40,8 @@ public class KumquatVision implements Sensor {
     private final Server mDataServer;
     private final VideoCapture mCapture;
     private final String mWindowName;
-    private final Set<Order> mProcessers;
-    private final Set<Order> mRunningProcesses;
+    private final Set<VisionProcessing> mProcessers;
+    private final Set<VisionProcessing> mRunningProcesses;
     private final Mat mCaptureMat;
     private final MatOfByte mStreamMat;
     Logger l = Logger.getGlobal();
@@ -101,16 +102,16 @@ public class KumquatVision implements Sensor {
         mThreadRunning = false;
     }
 
-    public void addPipeline(Function<Mat, List<MatOfPoint>> pipeline) {
+    public void addPipeline(VisionProcessing pipeline) {
         mProcessers.add(pipeline);
     }
 
-    public void addActive(Order pipeline) {
+    public void addActive(VisionProcessing pipeline) {
         mProcessers.add(pipeline);
         mRunningProcesses.add(pipeline);
     }
 
-    public void removeActive(Order pipeline) {
+    public void removeActive(VisionProcessing pipeline) {
         if (!mRunningProcesses.contains(pipeline)) {
             throw new IllegalArgumentException("Pipeline is not running");
         }
