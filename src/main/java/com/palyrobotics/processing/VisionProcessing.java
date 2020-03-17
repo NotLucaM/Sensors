@@ -2,26 +2,32 @@ package com.palyrobotics.processing;
 
 import com.esotericsoftware.minlog.Log;
 import com.palyrobotics.sensors.KumquatVision;
+import com.palyrobotics.util.ColorConstants;
 import com.palyrobotics.util.Range;
 import org.opencv.core.*;
+import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class VisionProcessing {
 
     private List<Order> mOrders;
     private static double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
+    private Function<List<MatOfPoint>, Point> mCentroidFunction;
 
     public VisionProcessing() {
     }
 
     public VisionProcessing(List<Order> orders) {
         setOrders(orders);
+        setCentroidFunction();
     }
 
     public static List<Order> generateOrder(Order... orders) {
@@ -398,7 +404,29 @@ public class VisionProcessing {
         }
     }
 
-    public void newthing() {
+    public static class DrawCentroid implements Order {
+
+        private Scalar mColor;
+
+        public DrawCentroid() {
+            this(ColorConstants.kBlack);
+        }
+
+        public DrawCentroid(Scalar mColor) {
+            this.mColor = mColor;
+        }
+
+        public void drawCentroid(Mat src, Point centroid) {
+            Imgproc.circle(src, centroid, 10, mColor);
+        }
+
+        @Override
+        public String toString() {
+            return "Draw Centroid";
+        }
+    }
+
+    public void test() { // TODO: implement?
         try {
             FilterContour f = (FilterContour) Class.forName("com.palyrobotics.processing.VisionProcessing$" + "Largest").newInstance();
         } catch (Throwable t) {
@@ -438,10 +466,35 @@ public class VisionProcessing {
                 contours = ((FindContour) order).findContours(inputCopy);
             } else if (order.getClass().equals(Copy.class)) {
                 ((Copy) order).copyMat(inputCopy, input);
+            } else if (order.getClass().equals(DrawCentroid.class)) {
+                ((DrawCentroid) order).drawCentroid(input, findCentroid(contours));
             }
         }
 
         return contours;
+    }
+
+    public Point findCentroid(List<MatOfPoint> input) {
+        return mCentroidFunction.apply(input);
+    }
+
+    /**
+     * sets the centroid function to the default function
+     */
+    public void setCentroidFunction() {
+        setCentroidFunction(contourList -> {
+            double averageX = 0, averageY = 0;
+            for (var contour: contourList) {
+                var currentMoment = Imgproc.moments(contour, false);
+                averageX += currentMoment.get_m10() / currentMoment.get_m00();
+                averageY += currentMoment.get_m01() / currentMoment.get_m00();
+            }
+            return new Point(averageX / contourList.size(), averageY / contourList.size());
+        });
+    }
+
+    public void setCentroidFunction(Function<List<MatOfPoint>, Point> function) {
+        mCentroidFunction = function;
     }
 
     /**
