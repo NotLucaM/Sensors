@@ -6,16 +6,14 @@ import com.esotericsoftware.kryonet.Server;
 import com.palyrobotics.util.Address;
 import com.palyrobotics.processing.VisionProcessing;
 import jdk.jshell.spi.ExecutionControl;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfInt;
+import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class KumquatVision implements Sensor {
@@ -37,6 +35,10 @@ public class KumquatVision implements Sensor {
     private boolean mShowImage;
     private boolean mThreadRunning;
     private int mCaptureFps = 60;
+    private Double mTx = null;
+    private Double mTy = null;
+    private Double mSkew = null;
+    private List<MatOfPoint> mContour;
     public static int kCaptureWidth = 1024;
     public static int kCaptureHeight = 1024;
     private String mOrder;
@@ -124,7 +126,7 @@ public class KumquatVision implements Sensor {
 
     private void setUpServers() {
         setUpServer(mImageServer, byte[].class);
-        setUpServer(mDataServer);
+        setUpServer(mDataServer, MatOfPoint.class, List.class, Double.class);
     }
 
     private void setUpServer(Server server, Class... types) {
@@ -181,8 +183,7 @@ public class KumquatVision implements Sensor {
     private void sendDataToConnectedClients() { // TODO: implement
         for (Connection connection : mImageServer.getConnections()) {
             if (connection.isConnected()) {
-                Object data = null;
-                connection.sendTCP(data);
+                connection.sendTCP(List.of(mTx, mTy, mSkew, mContour));
             }
         }
     }
