@@ -10,36 +10,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class VisionProcessing {
 
-    private static final String kErode = "erode";
-    private static final String kDilate = "dilate";
-    private static final String kBlur = "blur";
-    private static final String kThreshold = "threshold";
-    private static final String kArea = "area";
-    private static final String kPercent = "percent";
-    private static final String kExtent = "extent";
-    private static final String kSolidity = "solidity";
-    private static final String kAspect = "aspect";
-    private static final String kPerimeter = "perimeter";
-    private static final String kSort = "sort";
-    private static final String kLargest = "largest";
-
-    private String[] mOrders;
-    private Mat mTempMat = new Mat();
-    private Mat mDilateKernel;
-    private Mat mErodeKernel;
-    private Size mBlurSize;
-    private Scalar mMinColor;
-    private Scalar mMaxColor;
-    private Range mAreaRange;
-    private Range mPercentRange;
-    private Range mExtentRange;
-    private Range mSolidityRange;
-    private Range mAspectRange;
-    private Range mPerimeterRange;
+    private ArrayList<Function> mOrders;
     private double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
 
     public VisionProcessing() {
@@ -57,59 +33,264 @@ public class VisionProcessing {
         return builder.toString();
     }
 
-    // TODO: use Jackson to do this better
-    public static String erode(int intensity) {
-        return String.format("I %s %d,", kErode, intensity);
+    // TODO: use Jackson to store in json
+
+    private class Blur implements Function<Mat, Mat> {
+
+        private Size mSize;
+        private Mat mTempMat;
+
+        public Blur(int intensity) {
+            setIntensity(intensity);
+            this.mTempMat = new Mat();
+        }
+
+        @Override
+        public Mat apply(Mat mat) {
+            Imgproc.blur(mat, mTempMat, mSize);
+            return mTempMat;
+        }
+
+        public void setIntensity(int intensity) {
+            mSize = new Size(intensity, intensity);
+        }
     }
 
-    public static String dilate(int intensity) {
-        return String.format("I %s %d,", kDilate, intensity);
+    private class Dilate implements Function<Mat, Mat> {
+
+        private Mat mKernel;
+        private Mat mTempMat;
+
+        public Dilate(int intensity) {
+            setIntensity(intensity);
+            this.mTempMat = new Mat();
+        }
+
+        @Override
+        public Mat apply(Mat mat) {
+            Imgproc.dilate(mat, mTempMat, mKernel);
+            return mTempMat;
+        }
+
+        public void setIntensity(int intensity) {
+            mKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(intensity, intensity));
+        }
     }
 
-    public static String blur(int intensity) {
-        return String.format("I %s %d,", kBlur, intensity);
+    private class Erode implements Function<Mat, Mat> {
+
+        private Mat mKernel;
+        private Mat mTempMat;
+
+        public Erode(int intensity) {
+            setIntensity(intensity);
+            this.mTempMat = new Mat();
+        }
+
+        @Override
+        public Mat apply(Mat mat) {
+            Imgproc.erode(mat, mTempMat, mKernel);
+            return mTempMat;
+        }
+
+        public void setIntensity(int intensity) {
+            mKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(intensity, intensity));
+        }
     }
 
-    public static String threshold(Scalar min, Scalar max) {
-        return String.format("T %s %f %f %f %f %f %f,", kErode, min.val[0], min.val[1], min.val[2], max.val[0], max.val[1], max.val[2]);
+    private class Threshold implements Function<Mat, Mat> {
+
+        private Scalar mMinColor;
+        private Scalar mMaxColor;
+        private Mat mTempMat;
+
+        public Threshold(Scalar minColor, Scalar maxColor) {
+            setColors(minColor, maxColor);
+            this.mTempMat = new Mat();
+        }
+
+        @Override
+        public Mat apply(Mat mat) {
+            Core.inRange(mat, mMinColor, mMaxColor, mTempMat);
+            return mTempMat;
+        }
+
+        public void setColors(Scalar minColor, Scalar maxColor) {
+            mMinColor = minColor;
+            mMaxColor = maxColor;
+        }
     }
 
-    public static String areaFilter(double min, double max) {
-        return String.format("C %s %f %f,", kArea, min, max);
+    private class AreaFilter implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+
+        private Range mRange;
+
+        public AreaFilter(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour))).collect(Collectors.toList());
+        }
     }
 
-    public static String aspectRatio(double min, double max) {
-        return String.format("C %s %f %f,", kAspect, min, max);
+    private class AspectRatio implements Function<List<MatOfPoint>, List<MatOfPoint>> {
 
+        private Range mRange;
+
+        public AspectRatio(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            return candidates.stream().filter(contour -> mRange.contains((float) Imgproc.boundingRect(contour).width / Imgproc.boundingRect(contour).height)).collect(Collectors.toList());
+        }
     }
 
-    public static String extent(double min, double max) {
-        return String.format("C %s %f %f,", kExtent, min, max);
+    private class Extent implements Function<List<MatOfPoint>, List<MatOfPoint>> {
 
+        private Range mRange;
+
+        public Extent(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour) / Imgproc.boundingRect(contour).area())).collect(Collectors.toList());
+        }
     }
 
-    public static String largest(long amount) {
-        return String.format("C %s %d,", kLargest, amount);
+    private class Largest implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+
+        private int mAmount;
+
+        public Largest(int amount) {
+            setAmount(amount);
+        }
+
+        public void setAmount(int amount) {
+            mAmount = amount + 1;
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            PriorityQueue<Double> largest = new PriorityQueue<>(Collections.reverseOrder());
+            List<MatOfPoint> l = new ArrayList<>();
+
+            for (var candidate : candidates) {
+                largest.add(Imgproc.contourArea(candidate));
+            }
+
+            Double smallest = -1.0;
+            for (int i = 0; i < mAmount && !largest.isEmpty(); i++) {
+                smallest = largest.remove();
+            }
+
+            for (int i = 0; i < candidates.size(); i++) {
+                if (Imgproc.contourArea(candidates.get(i)) > smallest) {
+                    l.add(candidates.get(i));
+                }
+            }
+            return l;
+        }
     }
 
-    public static String percent(double min, double max) {
-        return String.format("C %s %f %f,", kPercent, min, max);
+    private class Percent implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+
+        private Range mRange;
+
+        public Percent(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            return candidates.stream().filter(matOfPoint -> mRange.contains(Imgproc.contourArea(matOfPoint) / mImageSize)).collect(Collectors.toList());
+        }
     }
 
-    public static String perimeter(double min, double max) {
-        return String.format("C %s %f %,f", kPerimeter, min, max);
+    private class Perimeter implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+
+        private Range mRange;
+
+        public Perimeter(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            MatOfPoint2f storage = new MatOfPoint2f();
+            return candidates.stream().filter(contour -> {
+                contour.convertTo(storage, CvType.CV_32FC2);
+                return mRange.contains(Imgproc.arcLength(storage, true));
+            }).collect(Collectors.toList());
+        }
     }
 
-    public static String solidity(double min, double max) {
-        return String.format("C %s %f %f,", kSolidity, min, max);
+    private class Solidity implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+
+        private Range mRange;
+
+        public Solidity(double min, double max) {
+            setRange(min, max);
+        }
+
+        public void setRange(double min, double max) {
+            mRange = new Range(min, max);
+        }
+
+        @Override
+        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+            return candidates.stream().filter(contour -> {
+                MatOfInt hull = new MatOfInt();
+                Imgproc.convexHull(contour, hull);
+                Point[] candidateArray = contour.toArray();
+                int[] hullArray = hull.toArray();
+                MatOfPoint hullMat = new MatOfPoint();
+
+                for (int value : hullArray) {
+                    hullMat.push_back(new MatOfPoint(new Point(candidateArray[value].x, candidateArray[value].y)));
+                }
+
+                double solidity = Imgproc.contourArea(contour) / Imgproc.contourArea(hullMat);
+
+                return mRange.contains(solidity);
+            }).collect(Collectors.toList());
+        }
     }
 
-    public static String display() {
-        return "E display,";
-    }
+    private class findContours implements Function<Mat, List<MatOfPoint>> {
 
-    public static String showContour() {
-        return "E contour,";
+        @Override
+        public List<MatOfPoint> apply(Mat mat) {
+            List<MatOfPoint> contours = new ArrayList<>();
+            Imgproc.findContours(mat, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            return contours;
+        }
     }
 
     public String getOrders() {
@@ -131,67 +312,9 @@ public class VisionProcessing {
         if (mOrders == null) {
             throw new NullPointerException("No orders");
         }
-        for (var order : mOrders) {
-            var parsed = order.split(" ");
-            if (parsed[0].equals("T")) {
-                inputCopy = threshold(inputCopy, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]), Double.parseDouble(parsed[4]),
-                        Double.parseDouble(parsed[5]), Double.parseDouble(parsed[6]), Double.parseDouble(parsed[7]));
-                contours = findContours(inputCopy);
-                continue;
-            }
-            if (parsed[0].equals("E")) {
-                switch (parsed[1]) {
-                    case "display":
-                        Imgproc.ellipse(input, new Point(0, 0), new Size(100, 100), 50, 0, 50, new Scalar(0, 0, 0));
-                        break;
-                    case "copy":
-                        inputCopy.copyTo(input);
-                        break;
-                    case "contour":
-                        for (int i = 0; i < contours.size(); i++) {
-                            Imgproc.drawContours(input, contours, i, ColorConstants.kRedUpperBoundHSV, 25); // TODO: when the image is greyscale display this in color
-                        }
-                        break;
-                }
 
-                continue;
-            }
-            switch (parsed[1]) {
-                case kErode:
-                    inputCopy = erode(inputCopy, Integer.parseInt(parsed[2]));
-                    break;
-                case kBlur:
-                    inputCopy = blur(inputCopy, Integer.parseInt(parsed[2]));
-                    break;
-                case kDilate:
-                    inputCopy = dilate(inputCopy, Integer.parseInt(parsed[2]));
-                    break;
-                case kArea:
-                    contours = areaFilter(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kAspect:
-                    contours = aspectRatio(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kExtent:
-                    contours = extent(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kLargest:
-                    contours = largest(contours, Long.parseLong(parsed[2]));
-                    break;
-                case kPercent:
-                    contours = percent(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kPerimeter:
-                    contours = perimeter(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kSolidity:
-                    contours = solidity(contours, Double.parseDouble(parsed[2]), Double.parseDouble(parsed[3]));
-                    break;
-                case kSort:
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown order");
-            }
+        for (var order : mOrders) {
+
         }
 
         return contours;
@@ -216,117 +339,5 @@ public class VisionProcessing {
             }
         }
         return true;
-    }
-
-    private Mat blur(Mat object, int size) {
-        if (mBlurSize == null || mBlurSize.height != size) {
-            mBlurSize = new Size(size, size);
-        }
-        Imgproc.blur(object, mTempMat, mBlurSize);
-        return mTempMat;
-    }
-
-    private Mat dilate(Mat object, int size) {
-        if (mDilateKernel == null || mDilateKernel.size().height != size) {
-            mDilateKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(size, size));
-        }
-        Imgproc.dilate(object, mTempMat, mDilateKernel);
-        return mTempMat;
-    }
-
-    private Mat erode(Mat object, int size) {
-        if (mErodeKernel == null || mErodeKernel.size().height != size) {
-            mErodeKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(size, size));
-        }
-        Imgproc.erode(object, mTempMat, mErodeKernel);
-        return mTempMat;
-    }
-
-    private Mat threshold(Mat object, double min1, double min2, double min3, double max1, double max2, double max3) {
-        if (mMinColor == null || mMinColor.val[0] != min1 || mMinColor.val[2] != min2 || mMinColor.val[3] != min3) {
-            mMinColor = new Scalar(min1, min2, min3);
-        }
-        if (mMaxColor == null || mMaxColor.val[0] != max1 || mMaxColor.val[2] != max2 || mMaxColor.val[3] != max3) {
-            mMaxColor = new Scalar(max1, max2, max3);
-        }
-        Core.inRange(object, mMinColor, mMaxColor, mTempMat);
-        return mTempMat;
-    }
-
-    private List<MatOfPoint> areaFilter(List<MatOfPoint> candidates, double min, double max) {
-        mAreaRange.set(min, max);
-        return candidates.stream().filter(contour -> mAreaRange.contains(Imgproc.contourArea(contour))).collect(Collectors.toList());
-    }
-
-    public List<MatOfPoint> aspectRatio(List<MatOfPoint> candidates, double min, double max) {
-        mAspectRange.set(min, max);
-        return candidates.stream().filter(contour -> mAspectRange.contains((float) Imgproc.boundingRect(contour).width / Imgproc.boundingRect(contour).height)).collect(Collectors.toList());
-    }
-
-    public List<MatOfPoint> extent(List<MatOfPoint> candidates, double min, double max) {
-        mExtentRange.set(min, max);
-        return candidates.stream().filter(contour -> mExtentRange.contains(Imgproc.contourArea(contour) / Imgproc.boundingRect(contour).area())).collect(Collectors.toList());
-    }
-
-    public List<MatOfPoint> largest(List<MatOfPoint> candidates, long amount) { // TODO: optimize this
-        amount++; // idk why but it works
-        PriorityQueue<Double> largest = new PriorityQueue<>(Collections.reverseOrder());
-        List<MatOfPoint> l = new ArrayList<>();
-
-        for (var candidate : candidates) {
-            largest.add(Imgproc.contourArea(candidate));
-        }
-
-        Double smallest = -1.0;
-        for (int i = 0; i < amount && !largest.isEmpty(); i++) {
-            smallest = largest.remove();
-        }
-
-        for (int i = 0; i < candidates.size(); i++) {
-            if (Imgproc.contourArea(candidates.get(i)) > smallest) {
-                l.add(candidates.get(i));
-            }
-        }
-        return l;
-    }
-
-    public List<MatOfPoint> percent(List<MatOfPoint> candidates, double min, double max) {
-        mPercentRange.set(min, max);
-        return candidates.stream().filter(matOfPoint -> mPercentRange.contains(Imgproc.contourArea(matOfPoint) / mImageSize)).collect(Collectors.toList());
-    }
-
-    public List<MatOfPoint> perimeter(List<MatOfPoint> candidates, double min, double max) {
-        mPercentRange.set(min, max);
-        MatOfPoint2f storage = new MatOfPoint2f();
-        return candidates.stream().filter(contour -> {
-            contour.convertTo(storage, CvType.CV_32FC2);
-            return mPerimeterRange.contains(Imgproc.arcLength(storage, true));
-        }).collect(Collectors.toList());
-    }
-
-    public List<MatOfPoint> solidity(List<MatOfPoint> candidates, double min, double max) { // TODO: Optimize and make it look better
-        mPercentRange.set(min, max);
-        return candidates.stream().filter(contour -> {
-            MatOfInt hull = new MatOfInt();
-            Imgproc.convexHull(contour, hull);
-            Point[] candidateArray = contour.toArray();
-            int[] hullArray = hull.toArray();
-            MatOfPoint hullMat = new MatOfPoint();
-
-            for (int value : hullArray) {
-                hullMat.push_back(new MatOfPoint(new Point(candidateArray[value].x, candidateArray[value].y)));
-            }
-
-            double solidity = Imgproc.contourArea(contour) / Imgproc.contourArea(hullMat);
-
-            return mSolidityRange.contains(solidity);
-        }).collect(Collectors.toList());
-    }
-
-    private List<MatOfPoint> findContours(Mat src) {
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(src, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        return contours;
     }
 }
