@@ -1,5 +1,6 @@
 package com.palyrobotics.processing;
 
+import com.esotericsoftware.minlog.Log;
 import com.palyrobotics.sensors.KumquatVision;
 import com.palyrobotics.util.Range;
 import org.opencv.core.*;
@@ -9,31 +10,40 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class VisionProcessing {
 
-    private ArrayList<Function> mOrders;
+    private List<Order> mOrders;
     private double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
 
     public VisionProcessing() {
     }
 
-    public VisionProcessing(String orders) {
+    public VisionProcessing(List<Order> orders) {
         setOrders(orders);
     }
 
-    public static List<Order> generateOrder(Function... orders) {
+    public static List<Order> generateOrder(Order... orders) {
         StringBuilder builder = new StringBuilder();
+        List<Order> finalOrder = new ArrayList<>();
+
         for (var order : orders) {
-            builder.append(order);
+            if (TransformMat.class.isAssignableFrom(order.getClass()) ||
+                FilterContour.class.isAssignableFrom(order.getClass()) ||
+                FindContour.class.isAssignableFrom(order.getClass())) {
+
+                builder.append(order.toString());
+                finalOrder.add(order);
+            } else {
+                throw new IllegalArgumentException();
+            }
         }
-        return builder.toString();
+        Log.info(builder.toString());
+        return finalOrder;
     }
 
     public interface Order {
-        public String getName();
     }
 
     public interface TransformMat extends Order {
@@ -71,7 +81,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Blur";
         }
     }
@@ -97,7 +107,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Dilate";
         }
     }
@@ -123,7 +133,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Erode";
         }
     }
@@ -151,7 +161,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Threshold";
         }
     }
@@ -174,7 +184,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Area";
         }
     }
@@ -197,7 +207,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Aspect Ratio";
         }
     }
@@ -220,7 +230,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Extent";
         }
     }
@@ -260,7 +270,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Largest";
         }
     }
@@ -283,7 +293,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Percent";
         }
     }
@@ -310,7 +320,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Perimeter";
         }
     }
@@ -347,7 +357,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Solidity";
         }
     }
@@ -363,16 +373,16 @@ public class VisionProcessing {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "Find Contours";
         }
     }
 
-    public void setOrders(String orders) {
+    public void setOrders(List<Order> orders) {
         if (!verifyOrder(orders)) {
             throw new IllegalArgumentException("Order does not work");
         }
-        this.mOrders = orders.split(",");
+        mOrders = orders;
     }
 
     public List<MatOfPoint> apply(Mat input) {
@@ -393,24 +403,12 @@ public class VisionProcessing {
         return contours;
     }
 
-    private boolean verifyOrder(String orders) {
-        var processingImage = true;
-        var parsedOrders = orders.split(",");
-
-        // TODO: Make this look better
-        for (var order : parsedOrders) {
-            var type = order.split(" ")[0];
-            if (type.equals("E")) {
-                continue;
-            }
-            if (processingImage && type.equals("I")) {
-            } else if (processingImage && type.equals("T")) {
-                processingImage = false;
-            } else if (!processingImage && type.equals("C")) {
-            } else {
-                return false;
+    private boolean verifyOrder(List<Order> orders) {
+        for (var order : orders) {
+            if (FindContour.class.isAssignableFrom(order.getClass())) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 }
