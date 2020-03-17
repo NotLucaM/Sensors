@@ -29,15 +29,8 @@ public class VisionProcessing {
         List<Order> finalOrder = new ArrayList<>();
 
         for (var order : orders) {
-            if (TransformMat.class.isAssignableFrom(order.getClass()) ||
-                FilterContour.class.isAssignableFrom(order.getClass()) ||
-                FindContour.class.isAssignableFrom(order.getClass())) {
-
-                builder.append(order.toString());
-                finalOrder.add(order);
-            } else {
-                throw new IllegalArgumentException();
-            }
+            builder.append(order.toString());
+            finalOrder.add(order);
         }
         Log.info(builder.toString());
         return finalOrder;
@@ -47,15 +40,30 @@ public class VisionProcessing {
     }
 
     public interface TransformMat extends Order {
-        public Mat apply(Mat object);
+        /**
+         * Transforms a given image. The image given will not be changed
+         * @param object    Image to be transformed
+         * @return          The transformed image. It is not the same reference as the given one
+         */
+        public Mat transform(Mat object);
     }
 
     public interface FilterContour extends Order {
-        public List<MatOfPoint> apply(List<MatOfPoint> object);
+        /**
+         * Filters out contours. The list given will not be changed.
+         * @param object    List of contours
+         * @return          A new list containing the filtered contours
+         */
+        public List<MatOfPoint> filter(List<MatOfPoint> object);
     }
 
     public interface FindContour extends Order {
-        public List<MatOfPoint> apply(Mat object);
+        /**
+         * Finds the contours given a mat
+         * @param object    An black and white image, color will return an error
+         * @return          The contours found by the function
+         */
+        public List<MatOfPoint> findContours(Mat object);
     }
 
     // TODO: use Jackson to store in json
@@ -71,7 +79,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public Mat apply(Mat mat) {
+        public Mat transform(Mat mat) {
             Imgproc.blur(mat, mTempMat, mSize);
             return mTempMat;
         }
@@ -97,7 +105,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public Mat apply(Mat mat) {
+        public Mat transform(Mat mat) {
             Imgproc.dilate(mat, mTempMat, mKernel);
             return mTempMat;
         }
@@ -123,7 +131,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public Mat apply(Mat mat) {
+        public Mat transform(Mat mat) {
             Imgproc.erode(mat, mTempMat, mKernel);
             return mTempMat;
         }
@@ -150,7 +158,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public Mat apply(Mat mat) {
+        public Mat transform(Mat mat) {
             Core.inRange(mat, mMinColor, mMaxColor, mTempMat);
             return mTempMat;
         }
@@ -179,7 +187,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour))).collect(Collectors.toList());
         }
 
@@ -202,7 +210,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains((float) Imgproc.boundingRect(contour).width / Imgproc.boundingRect(contour).height)).collect(Collectors.toList());
         }
 
@@ -225,7 +233,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour) / Imgproc.boundingRect(contour).area())).collect(Collectors.toList());
         }
 
@@ -248,7 +256,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             PriorityQueue<Double> largest = new PriorityQueue<>(Collections.reverseOrder());
             List<MatOfPoint> l = new ArrayList<>();
 
@@ -288,7 +296,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             return candidates.stream().filter(matOfPoint -> mRange.contains(Imgproc.contourArea(matOfPoint) / mImageSize)).collect(Collectors.toList());
         }
 
@@ -311,7 +319,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             MatOfPoint2f storage = new MatOfPoint2f();
             return candidates.stream().filter(contour -> {
                 contour.convertTo(storage, CvType.CV_32FC2);
@@ -338,7 +346,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> {
                 MatOfInt hull = new MatOfInt();
                 Imgproc.convexHull(contour, hull);
@@ -365,7 +373,7 @@ public class VisionProcessing {
     public static class FindContours implements FindContour {
 
         @Override
-        public List<MatOfPoint> apply(Mat mat) {
+        public List<MatOfPoint> findContours(Mat mat) {
             List<MatOfPoint> contours = new ArrayList<>();
             Imgproc.findContours(mat, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
@@ -378,6 +386,21 @@ public class VisionProcessing {
         }
     }
 
+    public static class Copy implements Order {
+
+        public void copyMat(Mat src, Mat dst) {
+            src.copyTo(dst);
+        }
+
+        @Override
+        public String toString() {
+            return "Copy";
+        }
+    }
+
+    /**
+     * Sets the pipeline this VisionProcessor looks at
+     */
     public void setOrders(List<Order> orders) {
         if (!verifyOrder(orders)) {
             StringBuilder orderName = new StringBuilder();
@@ -387,6 +410,12 @@ public class VisionProcessing {
         mOrders = orders;
     }
 
+    /**
+     * A function which takes a mat as input and outputs the contours which have been filtered out by the pipeline.
+     *
+     * @param input the mat to be processed
+     * @return      the contours filtered by the pipeline
+     */
     public List<MatOfPoint> apply(Mat input) {
         List<MatOfPoint> contours = null;
         Mat inputCopy = new Mat();
@@ -394,17 +423,24 @@ public class VisionProcessing {
 
         for (var order : mOrders) {
             if (TransformMat.class.isAssignableFrom(order.getClass())) {
-                inputCopy = ((TransformMat) order).apply(inputCopy);
+                inputCopy = ((TransformMat) order).transform(inputCopy);
             } else if (FilterContour.class.isAssignableFrom(order.getClass())) {
-                contours = ((FilterContour) order).apply(contours);
+                contours = ((FilterContour) order).filter(contours);
             } else if (FindContour.class.isAssignableFrom(order.getClass())) {
-                contours = ((FindContour) order).apply(inputCopy);
+                contours = ((FindContour) order).findContours(inputCopy);
+            } else if (order.getClass().equals(Copy.class)) {
+                ((Copy) order).copyMat(inputCopy, input);
             }
         }
 
         return contours;
     }
 
+    /**
+     * A function to make sure the given order has a Threshold and a FindContour
+     *
+     * @param orders    the order to be checked
+     */
     private static boolean verifyOrder(List<Order> orders) {
         boolean threshold = false;
         for (var order : orders) {
