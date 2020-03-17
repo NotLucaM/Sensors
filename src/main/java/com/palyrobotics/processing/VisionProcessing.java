@@ -486,6 +486,9 @@ public class VisionProcessing {
             double averageX = 0, averageY = 0;
             for (var contour: contourList) {
                 var currentMoment = Imgproc.moments(contour, false);
+                if (currentMoment.get_m00() == 0) {
+                    continue;
+                }
                 averageX += currentMoment.get_m10() / currentMoment.get_m00();
                 averageY += currentMoment.get_m01() / currentMoment.get_m00();
             }
