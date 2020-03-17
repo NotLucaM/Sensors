@@ -12,8 +12,8 @@ public class Main {
 
     private static List<Sensor> mRunningSensors;
     private static KumquatVision camera = new KumquatVision("127.0.0.1", 5802, 5803, 5803, 5803, true, "Vision");
-    private static String order1 = generateOrder(dilate(4), threshold(ColorConstants.kOrangeLowerBoundHSV, ColorConstants.kOrangeUpperBoundHSV), largest(1), "E copy,");
-    private static String order2 = generateOrder(erode(2), threshold(new Scalar(1, 2, 3), new Scalar(244, 244 ,244)), largest(1), showContour());
+    private static var order1 = generateOrder(dilate(4), threshold(ColorConstants.kOrangeLowerBoundHSV, ColorConstants.kOrangeUpperBoundHSV), largest(1), "E copy,");
+    private static var order2 = generateOrder(erode(2), threshold(new Scalar(1, 2, 3), new Scalar(244, 244 ,244)), largest(1), showContour());
 
     static {
         camera.addActive(order2);

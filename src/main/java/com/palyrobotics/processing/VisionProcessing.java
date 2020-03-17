@@ -1,6 +1,5 @@
 package com.palyrobotics.processing;
 
-import com.palyrobotics.util.ColorConstants;
 import com.palyrobotics.sensors.KumquatVision;
 import com.palyrobotics.util.Range;
 import org.opencv.core.*;
@@ -25,7 +24,7 @@ public class VisionProcessing {
         setOrders(orders);
     }
 
-    public static String generateOrder(String... orders) {
+    public static List<Order> generateOrder(Function... orders) {
         StringBuilder builder = new StringBuilder();
         for (var order : orders) {
             builder.append(order);
@@ -33,9 +32,25 @@ public class VisionProcessing {
         return builder.toString();
     }
 
+    public interface Order {
+        public String getName();
+    }
+
+    public interface TransformMat extends Order {
+        public Mat apply(Mat object);
+    }
+
+    public interface FilterContour extends Order {
+        public List<MatOfPoint> apply(List<MatOfPoint> object);
+    }
+
+    public interface FindContour extends Order {
+        public List<MatOfPoint> apply(Mat object);
+    }
+
     // TODO: use Jackson to store in json
 
-    private class Blur implements Function<Mat, Mat> {
+    private class Blur implements TransformMat {
 
         private Size mSize;
         private Mat mTempMat;
@@ -54,9 +69,14 @@ public class VisionProcessing {
         public void setIntensity(int intensity) {
             mSize = new Size(intensity, intensity);
         }
+
+        @Override
+        public String getName() {
+            return "Blur";
+        }
     }
 
-    private class Dilate implements Function<Mat, Mat> {
+    private class Dilate implements TransformMat {
 
         private Mat mKernel;
         private Mat mTempMat;
@@ -75,9 +95,14 @@ public class VisionProcessing {
         public void setIntensity(int intensity) {
             mKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(intensity, intensity));
         }
+
+        @Override
+        public String getName() {
+            return "Dilate";
+        }
     }
 
-    private class Erode implements Function<Mat, Mat> {
+    private class Erode implements TransformMat {
 
         private Mat mKernel;
         private Mat mTempMat;
@@ -96,9 +121,14 @@ public class VisionProcessing {
         public void setIntensity(int intensity) {
             mKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(intensity, intensity));
         }
+
+        @Override
+        public String getName() {
+            return "Erode";
+        }
     }
 
-    private class Threshold implements Function<Mat, Mat> {
+    private class Threshold implements TransformMat {
 
         private Scalar mMinColor;
         private Scalar mMaxColor;
@@ -119,13 +149,18 @@ public class VisionProcessing {
             mMinColor = minColor;
             mMaxColor = maxColor;
         }
+
+        @Override
+        public String getName() {
+            return "Threshold";
+        }
     }
 
-    private class AreaFilter implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Area implements FilterContour {
 
         private Range mRange;
 
-        public AreaFilter(double min, double max) {
+        public Area(double min, double max) {
             setRange(min, max);
         }
 
@@ -137,9 +172,14 @@ public class VisionProcessing {
         public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour))).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Area";
+        }
     }
 
-    private class AspectRatio implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class AspectRatio implements FilterContour {
 
         private Range mRange;
 
@@ -155,9 +195,14 @@ public class VisionProcessing {
         public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains((float) Imgproc.boundingRect(contour).width / Imgproc.boundingRect(contour).height)).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Aspect Ratio";
+        }
     }
 
-    private class Extent implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Extent implements FilterContour {
 
         private Range mRange;
 
@@ -173,9 +218,14 @@ public class VisionProcessing {
         public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
             return candidates.stream().filter(contour -> mRange.contains(Imgproc.contourArea(contour) / Imgproc.boundingRect(contour).area())).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Extent";
+        }
     }
 
-    private class Largest implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Largest implements FilterContour {
 
         private int mAmount;
 
@@ -208,9 +258,14 @@ public class VisionProcessing {
             }
             return l;
         }
+
+        @Override
+        public String getName() {
+            return "Largest";
+        }
     }
 
-    private class Percent implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Percent implements FilterContour {
 
         private Range mRange;
 
@@ -226,9 +281,14 @@ public class VisionProcessing {
         public List<MatOfPoint> apply(List<MatOfPoint> candidates) {
             return candidates.stream().filter(matOfPoint -> mRange.contains(Imgproc.contourArea(matOfPoint) / mImageSize)).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Percent";
+        }
     }
 
-    private class Perimeter implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Perimeter implements FilterContour {
 
         private Range mRange;
 
@@ -248,9 +308,14 @@ public class VisionProcessing {
                 return mRange.contains(Imgproc.arcLength(storage, true));
             }).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Perimeter";
+        }
     }
 
-    private class Solidity implements Function<List<MatOfPoint>, List<MatOfPoint>> {
+    private class Solidity implements FilterContour {
 
         private Range mRange;
 
@@ -280,9 +345,14 @@ public class VisionProcessing {
                 return mRange.contains(solidity);
             }).collect(Collectors.toList());
         }
+
+        @Override
+        public String getName() {
+            return "Solidity";
+        }
     }
 
-    private class findContours implements Function<Mat, List<MatOfPoint>> {
+    private class FindContours implements FindContour {
 
         @Override
         public List<MatOfPoint> apply(Mat mat) {
@@ -291,10 +361,11 @@ public class VisionProcessing {
 
             return contours;
         }
-    }
 
-    public String getOrders() {
-        return generateOrder(mOrders);
+        @Override
+        public String getName() {
+            return "Find Contours";
+        }
     }
 
     public void setOrders(String orders) {
@@ -304,17 +375,19 @@ public class VisionProcessing {
         this.mOrders = orders.split(",");
     }
 
-    public List<MatOfPoint> parseMat(Mat input) {
+    public List<MatOfPoint> apply(Mat input) {
         List<MatOfPoint> contours = null;
         Mat inputCopy = new Mat();
         input.copyTo(inputCopy);
 
-        if (mOrders == null) {
-            throw new NullPointerException("No orders");
-        }
-
         for (var order : mOrders) {
-
+            if (TransformMat.class.isAssignableFrom(order.getClass())) {
+                inputCopy = ((TransformMat) order).apply(inputCopy);
+            } else if (FilterContour.class.isAssignableFrom(order.getClass())) {
+                contours = ((FilterContour) order).apply(contours);
+            } else if (FindContour.class.isAssignableFrom(order.getClass())) {
+                contours = ((FindContour) order).apply(inputCopy);
+            }
         }
 
         return contours;
