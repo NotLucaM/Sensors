@@ -256,7 +256,7 @@ public class VisionProcessing {
         }
 
         @Override
-        public List<MatOfPoint> filter(List<MatOfPoint> candidates) {
+        public List<MatOfPoint> filter(List<MatOfPoint> candidates) { // TODO: make this better
             PriorityQueue<Double> largest = new PriorityQueue<>(Collections.reverseOrder());
             List<MatOfPoint> l = new ArrayList<>();
 
@@ -269,9 +269,9 @@ public class VisionProcessing {
                 smallest = largest.remove();
             }
 
-            for (int i = 0; i < candidates.size(); i++) {
-                if (Imgproc.contourArea(candidates.get(i)) > smallest) {
-                    l.add(candidates.get(i));
+            for (MatOfPoint candidate : candidates) {
+                if (Imgproc.contourArea(candidate) > smallest) {
+                    l.add(candidate);
                 }
             }
             return l;
@@ -398,13 +398,21 @@ public class VisionProcessing {
         }
     }
 
+    public void newthing() {
+        try {
+            FilterContour f = (FilterContour) Class.forName("com.palyrobotics.processing.VisionProcessing$" + "Largest").newInstance();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
     /**
      * Sets the pipeline this VisionProcessor looks at
      */
     public void setOrders(List<Order> orders) {
         if (!verifyOrder(orders)) {
             StringBuilder orderName = new StringBuilder();
-            orders.stream().map(order -> order.toString()).forEach(orderName::append);
+            orders.stream().map(order -> order.getClass().getSimpleName()).forEach(orderName::append);
             throw new IllegalArgumentException(String.format("Order does not work: %s", orderName.toString()));
         }
         mOrders = orders;
