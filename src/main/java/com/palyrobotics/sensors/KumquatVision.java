@@ -54,7 +54,7 @@ public class KumquatVision implements Sensor {
         this(address, imageTcpPort, imageUdpPort, dataTcpPort, dataUdpPort, false, "");
     }
 
-    public KumquatVision(String address, Integer imageTcpPort, Integer imageUdpPort, Integer dataTcpPort, Integer dataUdpPort, boolean showImage, String windowName) { // TODO: remove show image
+    public KumquatVision(String address, Integer imageTcpPort, Integer imageUdpPort, Integer dataTcpPort, Integer dataUdpPort, boolean showImage, String windowName) {
         mImageAddress = new Address(address, imageTcpPort, imageUdpPort);
         mDataAddress = new Address(address, dataTcpPort, dataUdpPort);
         mWindowName = windowName;
@@ -191,7 +191,7 @@ public class KumquatVision implements Sensor {
         }
     }
 
-    private void sendDataToConnectedClients() { // TODO: implement
+    private void sendDataToConnectedClients() {
         for (Connection connection : mImageServer.getConnections()) {
             if (connection.isConnected()) {
                 connection.sendTCP(List.of(mTx, mTy, mSkew, mContour));
