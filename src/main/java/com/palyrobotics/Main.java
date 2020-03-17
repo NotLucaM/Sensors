@@ -1,6 +1,6 @@
 package com.palyrobotics;
 
-import com.palyrobotics.sensors.KumquatVisionModule;
+import com.palyrobotics.sensors.KumquatVision;
 import com.palyrobotics.sensors.Sensor;
 import com.palyrobotics.util.ColorConstants;
 import org.opencv.core.Scalar;
@@ -11,7 +11,7 @@ import static com.palyrobotics.processing.VisionProcessing.*;
 public class Main {
 
     private static List<Sensor> mRunningSensors;
-    private static KumquatVisionModule camera = new KumquatVisionModule("127.0.0.1", 5802, 5803, true, "Vision");
+    private static KumquatVision camera = new KumquatVision("127.0.0.1", 5802, 5803, true, "Vision");
     private static String order1 = generateOrder(dilate(4), threshold(ColorConstants.kOrangeLowerBoundHSV, ColorConstants.kOrangeUpperBoundHSV), largest(1), "E copy,", "E test,", showContour());
     private static String order2 = generateOrder(erode(2), threshold(new Scalar(1, 2, 3), new Scalar(244, 244 ,244)), largest(1), showContour());
 

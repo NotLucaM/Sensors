@@ -1,7 +1,7 @@
 package com.palyrobotics.processing;
 
 import com.palyrobotics.util.ColorConstants;
-import com.palyrobotics.sensors.KumquatVisionModule;
+import com.palyrobotics.sensors.KumquatVision;
 import com.palyrobotics.util.Range;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -40,7 +40,7 @@ public class VisionProcessing {
     private Range mSolidityRange;
     private Range mAspectRange;
     private Range mPerimeterRange;
-    private double mImageSize = KumquatVisionModule.kCaptureHeight * KumquatVisionModule.kCaptureWidth;
+    private double mImageSize = KumquatVision.kCaptureHeight * KumquatVision.kCaptureWidth;
 
     public VisionProcessing() {
     }

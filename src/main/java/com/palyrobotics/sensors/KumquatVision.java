@@ -3,7 +3,7 @@ package com.palyrobotics.sensors;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
-import com.palyrobotics.util.Adress;
+import com.palyrobotics.util.Address;
 import com.palyrobotics.processing.VisionProcessing;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -17,13 +17,15 @@ import org.opencv.videoio.Videoio;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class KumquatVisionModule implements Sensor {
+public class KumquatVision implements Sensor {
 
     public static final int BUFFER_SIZE = 50000;
     private static final long SLEEP_MS = 100;
 
-    private final Adress mAdress;
-    private final Server mServer;
+    private final Address mImageAddress;
+    private final Address mDataAddress;
+    private final Server mImageServer;
+    private final Server mDataServer;
     private final VideoCapture mCapture;
     private final String mWindowName;
     private final VisionProcessing mProcesser;
@@ -44,25 +46,19 @@ public class KumquatVisionModule implements Sensor {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
 
-    public KumquatVisionModule(String address, Integer tcpPort) {
-        this(address, tcpPort, null, false, "");
+    public KumquatVision(String address, Integer imageTcpPort, Integer imageUdpPort, Integer dataTcpPort, Integer dataUdpPort) {
+        this(address, imageTcpPort, imageUdpPort, dataTcpPort, dataUdpPort, false, "");
     }
 
-    public KumquatVisionModule(String address, Integer tcpPort, Integer udpPort) {
-        this(address, tcpPort, udpPort, false, "");
-    }
-
-    public KumquatVisionModule(String address, Integer tcpPort, boolean showImage, String windowName) {
-        this(address, tcpPort, null, showImage, windowName);
-    }
-
-    public KumquatVisionModule(String address, Integer tcpPort, Integer udpPort, boolean showImage, String windowName) { // TODO: remove show image
-        mAdress = new Adress(address, tcpPort, udpPort);
+    public KumquatVision(String address, Integer imageTcpPort, Integer imageUdpPort, Integer dataTcpPort, Integer dataUdpPort, boolean showImage, String windowName) { // TODO: remove show image
+        mImageAddress = new Address(address, imageTcpPort, imageUdpPort);
+        mDataAddress = new Address(address, dataTcpPort, dataUdpPort);
         mWindowName = windowName;
 
         mCapture = new VideoCapture(0);
         mThreadRunning = false;
-        mServer = new Server();
+        mImageServer = new Server();
+        mDataServer = new Server();
 
         mShowImage = showImage;
         mCaptureMat = new Mat();
@@ -106,7 +102,7 @@ public class KumquatVisionModule implements Sensor {
         try {
             l.info("Starting capture thread");
             while (mCapture.isOpened()) {
-                boolean hasClients = mServer.getConnections().length > 0;
+                boolean hasClients = mImageServer.getConnections().length > 0;
                 // If not showing image and not sending to clients - exit thread.
                 if (!hasClients && !mShowImage) {
                     return;
@@ -120,10 +116,17 @@ public class KumquatVisionModule implements Sensor {
         }
     }
 
-    private void setUpServer() {
-        mServer.getKryo().register(byte[].class);
-        mServer.start();
-        mServer.addListener(new Listener() {
+    private void setUpServers() {
+        setUpServer(mImageServer, byte[].class);
+        setUpServer(mDataServer);
+    }
+
+    private void setUpServer(Server server, Class... types) {
+        for (Class type : types) {
+            server.getKryo().register(type);
+        }
+        server.start();
+        server.addListener(new Listener() {
             @Override
             public void connected(Connection connection) {
                 maybeStart();
@@ -136,7 +139,7 @@ public class KumquatVisionModule implements Sensor {
             }
         });
         try {
-            mServer.bind(mAdress.getTcpPort(), mAdress.getUdpPort());
+            server.bind(mImageAddress.getTcpPort(), mImageAddress.getUdpPort());
         } catch (IOException connectException) {
             connectException.printStackTrace();
         }
@@ -157,7 +160,7 @@ public class KumquatVisionModule implements Sensor {
     }
 
     private void sendFrameToConnectedClients() {
-        for (Connection connection : mServer.getConnections()) {
+        for (Connection connection : mImageServer.getConnections()) {
             if (connection.isConnected()) {
                 final var bytes = mStreamMat.toArray();
                 if (bytes.length < BUFFER_SIZE) {
@@ -171,7 +174,7 @@ public class KumquatVisionModule implements Sensor {
 
     @Override
     public void init() {
-        setUpServer();
+        setUpServers();
         setUpCapture();
         maybeStart();
     }

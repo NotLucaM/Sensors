@@ -1,16 +1,16 @@
 package com.palyrobotics.util;
 
-public class Adress {
+public class Address {
 
     private String mAddress;
     private Integer mTcpPort;
     private Integer mUdpPort;
 
-    public Adress(String address, Integer tcpPort) {
+    public Address(String address, Integer tcpPort) {
         this(address, tcpPort, null);
     }
 
-    public Adress(String address, Integer tcpPort, Integer udpPort) {
+    public Address(String address, Integer tcpPort, Integer udpPort) {
         this.mAddress = address;
         this.mTcpPort = tcpPort;
         this.mUdpPort = udpPort;
