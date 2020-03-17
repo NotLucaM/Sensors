@@ -5,7 +5,6 @@ import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 import com.palyrobotics.util.Address;
 import com.palyrobotics.processing.VisionProcessing;
-import jdk.jshell.spi.ExecutionControl;
 import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -13,7 +12,10 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
@@ -28,7 +30,8 @@ public class KumquatVision implements Sensor {
     private final Server mDataServer;
     private final VideoCapture mCapture;
     private final String mWindowName;
-    private final VisionProcessing mProcesser;
+    private final Set<VisionProcessing> mProcessers;
+    private final Set<VisionProcessing> mRunningProcesses;
 
     private final Mat mCaptureMat;
     private final MatOfByte mStreamMat;
@@ -67,7 +70,8 @@ public class KumquatVision implements Sensor {
         mShowImage = showImage;
         mCaptureMat = new Mat();
         mStreamMat = new MatOfByte();
-        mProcesser = new VisionProcessing();
+        mProcessers = new HashSet<>();
+        mRunningProcesses = new HashSet<>();
     }
 
     private void setUpCapture() {
@@ -96,9 +100,30 @@ public class KumquatVision implements Sensor {
         mThreadRunning = false;
     }
 
-    public void setOrder(String order) {
-        mOrder = order;
-        mProcesser.setOrders(order);
+    public void addPipeline(String pipeline) {
+        addPipeline(new VisionProcessing(pipeline));
+    }
+
+    public void setActive(String pipeline) {
+        setActive(new VisionProcessing(pipeline));
+    }
+
+    public void addPipeline(VisionProcessing pipeline) {
+        mProcessers.add(pipeline);
+    }
+
+    public void setActive(VisionProcessing pipeline) {
+        if (!mProcessers.contains(pipeline)) {
+            mProcessers.add(pipeline);
+        }
+        mRunningProcesses.add(pipeline);
+    }
+
+    public void removeActive(VisionProcessing pipeline) {
+        if (!mRunningProcesses.contains(pipeline)) {
+            throw new IllegalArgumentException("Pipeline is not running");
+        }
+        mRunningProcesses.remove(pipeline);
     }
 
     @Override
@@ -166,7 +191,10 @@ public class KumquatVision implements Sensor {
 
     private boolean readFrame() {
         if (mCapture.read(mCaptureMat)) {
-            mProcesser.parseMat(mCaptureMat);
+            List<MatOfPoint> contours = new ArrayList<>();
+            for (VisionProcessing process : mProcessers) {
+                contours.addAll(process.parseMat(mCaptureMat));
+            }
             if (mShowImage) {
                 HighGui.imshow(mWindowName, mCaptureMat);
                 HighGui.waitKey(1);

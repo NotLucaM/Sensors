@@ -16,13 +16,13 @@ public class Main {
     private static String order2 = generateOrder(erode(2), threshold(new Scalar(1, 2, 3), new Scalar(244, 244 ,244)), largest(1), showContour());
 
     static {
-        camera.setOrder(order2);
+        camera.setActive(order2);
         mRunningSensors = List.of(camera);
     }
 
     public static void main(String[] args) throws InterruptedException {
         mRunningSensors.forEach(Sensor::init);
         Thread.sleep(10000);
-        camera.setOrder(order1);
+        camera.setActive(order1);
     }
 }
