@@ -8,7 +8,6 @@ import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -417,12 +416,36 @@ public class VisionProcessing {
         }
 
         public void drawCentroid(Mat src, Point centroid) {
-            Imgproc.circle(src, centroid, 10, mColor);
+            Imgproc.circle(src, centroid, 10, mColor, Imgproc.FILLED);
         }
 
         @Override
         public String toString() {
             return "Draw Centroid";
+        }
+    }
+
+    public static class DrawContours implements Order {
+
+        private Scalar mColor;
+
+        public DrawContours() {
+            this(ColorConstants.kBlack);
+        }
+
+        public DrawContours(Scalar mColor) {
+            this.mColor = mColor;
+        }
+
+        public void drawContour(Mat src, List<MatOfPoint> contours) {
+            for (int i = 0; i < contours.size(); i++) {
+                Imgproc.drawContours(src, contours, i, mColor, 5); // TODO: make thickness a field
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Draw Contour";
         }
     }
 
@@ -468,6 +491,9 @@ public class VisionProcessing {
                 ((Copy) order).copyMat(inputCopy, input);
             } else if (order.getClass().equals(DrawCentroid.class)) {
                 ((DrawCentroid) order).drawCentroid(input, findCentroid(contours));
+            } else if (order.getClass().equals(DrawContours.class)) {
+                assert contours != null;
+                ((DrawContours) order).drawContour(input, contours);
             }
         }
 
@@ -505,7 +531,7 @@ public class VisionProcessing {
      *
      * @param orders    the order to be checked
      */
-    private static boolean verifyOrder(List<Order> orders) {
+    private static boolean verifyOrder(List<Order> orders) { // TODO: check if every class works in this order
         boolean threshold = false;
         for (var order : orders) {
             if (order.getClass().equals(Threshold.class)) {
