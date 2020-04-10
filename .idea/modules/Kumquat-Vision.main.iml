@@ -21,6 +21,7 @@
     <orderEntry type="library" name="Gradle: com.esotericsoftware:kryo:4.0.2" level="project" />
     <orderEntry type="library" name="Gradle: net.sourceforge.argparse4j:argparse4j:0.8.1" level="project" />
     <orderEntry type="library" name="Gradle: com.fasterxml:jackson-module-json-org:0.9.1" level="project" />
+    <orderEntry type="library" name="Gradle: org.vesalainen.comm:javaxcomm:1.0.1" level="project" />
     <orderEntry type="library" name="Gradle: com.esotericsoftware.reflectasm:reflectasm:shaded:1.07" level="project" />
     <orderEntry type="library" name="Gradle: com.esotericsoftware.minlog:minlog:1.2" level="project" />
     <orderEntry type="library" name="Gradle: org.objenesis:objenesis:2.5.1" level="project" />
@@ -29,7 +30,14 @@
     <orderEntry type="library" name="Gradle: org.codehaus.jackson:jackson-mapper-asl:1.7.4" level="project" />
     <orderEntry type="library" name="Gradle: org.json:json:20090211" level="project" />
     <orderEntry type="library" name="Gradle: junit:junit:4.8.2" level="project" />
+    <orderEntry type="library" name="Gradle: org.vesalainen:comm:1.0.2" level="project" />
     <orderEntry type="library" name="Gradle: org.ow2.asm:asm:5.0.4" level="project" />
     <orderEntry type="library" name="Gradle: org.codehaus.jackson:jackson-core-asl:1.7.4" level="project" />
+    <orderEntry type="library" name="Gradle: org.vesalainen:dev:1.0.0" level="project" />
+    <orderEntry type="library" name="Gradle: org.vesalainen:util:1.8.0" level="project" />
+    <orderEntry type="library" name="Gradle: commons-net:commons-net:3.3" level="project" />
+    <orderEntry type="library" name="Gradle: com.googlecode.efficient-java-matrix-library:equation:0.26" level="project" />
+    <orderEntry type="library" name="Gradle: log4j:log4j:1.2.17" level="project" />
+    <orderEntry type="library" name="Gradle: com.googlecode.efficient-java-matrix-library:core:0.26" level="project" />
   </component>
 </module>
