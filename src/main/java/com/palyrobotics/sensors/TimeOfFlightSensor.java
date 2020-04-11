@@ -2,19 +2,14 @@ package com.palyrobotics.sensors;
 
 import com.fazecast.jSerialComm.SerialPort;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.management.BufferPoolMXBean;
-import java.util.Enumeration;
 
 public class TimeOfFlightSensor implements Sensor {
 
     static final  int TIMEOUT = 2000;
 
     private final String inputLocation;
-    //private CommPortIdentifier portIdentifier;
     private SerialPort port;
 
     public TimeOfFlightSensor(String input)  {
@@ -33,7 +28,7 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public String getName() {
-        return null;
+        return "TimeOfFlightSensor";
     }
 
     @Override
