@@ -1,5 +1,8 @@
 package com.palyrobotics.sensors;
 
+import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.Listener;
+import com.esotericsoftware.kryonet.Server;
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
@@ -11,11 +14,37 @@ public class TimeOfFlightSensor implements Sensor {
 
     private final String portSystemName;
     private SerialPort port;
-    private boolean running = false;
+    private boolean running;
+    private Server server;
+    private final int tcpPort;
 
-    public TimeOfFlightSensor(String portSystemName)  {
+    public TimeOfFlightSensor(String portSystemName, int tcpPort)  {
         this.portSystemName = portSystemName;
+        this.running = false;
+        this.server = new Server();
+        this.tcpPort = tcpPort;
+
         verifyPort();
+    }
+
+    private void setUpServer() { // TODO: maybe make Sensor an abstract class with this as it is similar to KumquatVision
+        server.start();
+        server.addListener(new Listener() {
+            @Override
+            public void connected(Connection connection) {
+                System.out.println("Connected");
+            }
+
+            @Override
+            public void disconnected(Connection connection) {
+                System.out.println("Disconnected");
+            }
+        });
+        try {
+            server.bind(tcpPort);
+        } catch (IOException connectException) {
+            connectException.printStackTrace();
+        }
     }
 
     public boolean verifyPort() {
