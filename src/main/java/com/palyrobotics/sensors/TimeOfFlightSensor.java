@@ -18,6 +18,10 @@ public class TimeOfFlightSensor implements Sensor {
     }
 
     public boolean verifyPort() {
+        if (port != null) {
+            return true;
+        }
+
         SerialPort[] ports = SerialPort.getCommPorts();
         for (var p : ports) {
             if (p.getSystemPortName().equals(portSystemName)) {
