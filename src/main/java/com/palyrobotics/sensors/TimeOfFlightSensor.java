@@ -9,18 +9,23 @@ public class TimeOfFlightSensor implements Sensor {
 
     static final  int TIMEOUT = 2000;
 
-    private final String inputLocation;
+    private final String portSystemName;
     private SerialPort port;
 
-    public TimeOfFlightSensor(String input)  {
-        this.inputLocation = input;
+    public TimeOfFlightSensor(String portSystemName)  {
+        this.portSystemName = portSystemName;
+        verifyPort();
+    }
 
+    public boolean verifyPort() {
         SerialPort[] ports = SerialPort.getCommPorts();
         for (var p : ports) {
-            if (p.getSystemPortName().equals(input)) {
+            if (p.getSystemPortName().equals(portSystemName)) {
                 port = p;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
