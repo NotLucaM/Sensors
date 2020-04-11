@@ -14,6 +14,13 @@ public class TimeOfFlightSensor implements Sensor {
 
     public TimeOfFlightSensor(String input)  {
         this.inputLocation = input;
+
+        SerialPort[] ports = SerialPort.getCommPorts();
+        for (var p : ports) {
+            if (p.getSystemPortName().equals(input)) {
+                port = p;
+            }
+        }
     }
 
     @Override
