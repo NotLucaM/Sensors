@@ -1,5 +1,6 @@
 package com.palyrobotics.sensors;
 
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
@@ -85,6 +86,32 @@ public class TimeOfFlightSensor implements Sensor {
 
         while (true) {
 
+        }
+    }
+
+    public int getDistance() {
+        var stream = port.getInputStream();
+
+        while (true) {
+            try {
+                // Each 9 byte data package has 2 headers (both 0x59) followed by 2 bytes representing the distance
+                int header = stream.read();
+                while (header != 0x59) { // Continue reading until the package header is read
+                    header = stream.read();
+                }
+                header = stream.read();
+                if (header != 0x59) { // Make sure the next byte is also a header
+                    continue;
+                }
+
+                // Finds the distance from the next 2 bytes
+                int distance = stream.read();
+                distance = distance + 256 * stream.read();
+                return distance;
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
