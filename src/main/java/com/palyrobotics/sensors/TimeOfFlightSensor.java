@@ -85,6 +85,7 @@ public class TimeOfFlightSensor implements Sensor {
         running = true;
 
         while (true) {
+            int distance = getDistance();
 
         }
     }
@@ -111,35 +112,6 @@ public class TimeOfFlightSensor implements Sensor {
 
             } catch (IOException e) {
                 e.printStackTrace();
-            }
-        }
-    }
-
-    public void searchForPorts() {
-        SerialPort[] ports = SerialPort.getCommPorts();
-        for(var p : ports) {
-            System.out.println(p.getDescriptivePortName() + " " + p.getSystemPortName() + " " + p.getBaudRate());
-
-            p.setBaudRate(115200);
-            p.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 1000, 1000);
-            p.openPort();
-            InputStream br = p.getInputStream();
-            while (true) {
-                try {
-                    int n1 = br.read();
-                    while (n1 != 0x59) {
-                        n1 = br.read();
-                    }
-                    n1 = br.read();
-                    if (n1 != 0x59) {
-                        continue;
-                    }
-                    int n2 = br.read();
-                    n2 = n2 + 256 * br.read();
-                    System.out.println(n2);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }
