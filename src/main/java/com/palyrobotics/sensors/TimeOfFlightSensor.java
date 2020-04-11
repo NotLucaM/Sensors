@@ -18,12 +18,12 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public void init() {
-
+        port.openPort();
     }
 
     @Override
     public void terminate() {
-
+        port.closePort();
     }
 
     @Override
