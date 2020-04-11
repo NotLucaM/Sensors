@@ -11,6 +11,7 @@ public class TimeOfFlightSensor implements Sensor {
 
     private final String portSystemName;
     private SerialPort port;
+    private boolean running = false;
 
     public TimeOfFlightSensor(String portSystemName)  {
         this.portSystemName = portSystemName;
@@ -34,7 +35,9 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public void init() {
-        port.openPort();
+        if (port != null && !running) {
+            new Thread(this).start();
+        }
     }
 
     @Override
@@ -49,7 +52,11 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public void run() {
+        running = true;
 
+        while (true) {
+
+        }
     }
 
     public void searchForPorts() {
