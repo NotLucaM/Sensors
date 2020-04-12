@@ -88,13 +88,13 @@ public class TimeOfFlightSensor implements Sensor {
     public void run() {
         running = true;
 
-        while (true) {
+        while (port.isOpen()) {
             int distance = getDistance();
             server.sendToAllTCP(distance); // TODO: determine if TCP or UDP is better in this scenario
         }
     }
 
-    public int getDistance() {
+    public int getDistance() { // See, I do sometimes write comments in my code :)
         var stream = port.getInputStream();
 
         while (true) { // I believe the port or the InputStream will throw an error if it does not work and the loop will be broken because of that
@@ -115,19 +115,19 @@ public class TimeOfFlightSensor implements Sensor {
                 int distance = stream.read();
                 distance = distance + 256 * stream.read();
 
-                int pwr = stream.read();
-                pwr = pwr + 256 * stream.read();
+                int strength = stream.read();
+                strength = strength + 256 * stream.read();
                 int mode = stream.read();
                 int spare = stream.read();
                 int checkSum = stream.read();
 
                 return distance;
-
             } catch (IOException e) {
                 e.printStackTrace();
                 break;
             }
         }
+
         return -1;
     }
 }
