@@ -11,7 +11,7 @@ import java.io.InputStream;
 
 public class TimeOfFlightSensor implements Sensor {
 
-    static final  int TIMEOUT = 2000;
+    static final int TIMEOUT = 2000;
 
     private final String portSystemName;
     private SerialPort port;
@@ -57,6 +57,8 @@ public class TimeOfFlightSensor implements Sensor {
         for (var p : ports) {
             if (p.getSystemPortName().equals(portSystemName)) {
                 port = p;
+                port.setBaudRate(115200);
+                port.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use
                 return true;
             }
         }
@@ -72,7 +74,7 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public void terminate() {
-        port.closePort();
+        port.closePort(); // Should generate and error for the thread and close it
     }
 
     @Override
@@ -86,14 +88,14 @@ public class TimeOfFlightSensor implements Sensor {
 
         while (true) {
             int distance = getDistance();
-
+            server.sendToAllTCP(distance); // TODO: determine if TCP or UDP is better in this scenario
         }
     }
 
     public int getDistance() {
         var stream = port.getInputStream();
 
-        while (true) {
+        while (true) { // I believe the port or the InputStream will throw an error if it does not work and the loop will be broken because of that
             try {
                 // Each 9 byte data package has 2 headers (both 0x59) followed by 2 bytes representing the distance
                 int header = stream.read();
