@@ -17,6 +17,33 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../lib/jSerialComm-2.6.1-javadoc.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../lib/jSerialComm-2.6.1-sources.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../lib/jSerialComm-2.6.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="library" name="Gradle: kryonet:kryonet:2.21" level="project" />
     <orderEntry type="library" name="Gradle: com.esotericsoftware:kryo:4.0.2" level="project" />
     <orderEntry type="library" name="Gradle: net.sourceforge.argparse4j:argparse4j:0.8.1" level="project" />
@@ -31,6 +58,5 @@
     <orderEntry type="library" name="Gradle: junit:junit:4.8.2" level="project" />
     <orderEntry type="library" name="Gradle: org.ow2.asm:asm:5.0.4" level="project" />
     <orderEntry type="library" name="Gradle: org.codehaus.jackson:jackson-core-asl:1.7.4" level="project" />
-    <orderEntry type="library" name="com.fazecast:jSerialComm:2.6.1" level="project" />
   </component>
 </module>

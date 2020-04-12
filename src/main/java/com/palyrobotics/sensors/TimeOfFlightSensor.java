@@ -1,17 +1,15 @@
 package com.palyrobotics.sensors;
 
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 public class TimeOfFlightSensor implements Sensor {
 
-    static final int TIMEOUT = 2000;
+    static final int TIMEOUT = 10000;
 
     private final String portSystemName;
     private SerialPort port;
@@ -25,6 +23,7 @@ public class TimeOfFlightSensor implements Sensor {
         this.server = new Server();
         this.tcpPort = tcpPort;
 
+        setUpServer();
         verifyPort();
     }
 
@@ -58,7 +57,8 @@ public class TimeOfFlightSensor implements Sensor {
             if (p.getSystemPortName().equals(portSystemName)) {
                 port = p;
                 port.setBaudRate(115200);
-                port.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use
+                port.openPort();
+                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use
                 return true;
             }
         }
@@ -67,6 +67,8 @@ public class TimeOfFlightSensor implements Sensor {
 
     @Override
     public void init() {
+        verifyPort();
+
         if (port != null && !running) {
             new Thread(this).start();
         }
@@ -107,14 +109,25 @@ public class TimeOfFlightSensor implements Sensor {
                     continue;
                 }
 
+                int sum = 0; // TODO: CheckSum is the low 8 bits of the cumulative sum of the numbers of the first 8 bytes.
+
                 // Finds the distance from the next 2 bytes
                 int distance = stream.read();
                 distance = distance + 256 * stream.read();
+
+                int pwr = stream.read();
+                pwr = pwr + 256 * stream.read();
+                int mode = stream.read();
+                int spare = stream.read();
+                int checkSum = stream.read();
+
                 return distance;
 
             } catch (IOException e) {
                 e.printStackTrace();
+                break;
             }
         }
+        return -1;
     }
 }

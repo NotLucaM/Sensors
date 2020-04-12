@@ -9,6 +9,5 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="com.fazecast:jSerialComm:2.6.1" level="project" />
   </component>
 </module>
