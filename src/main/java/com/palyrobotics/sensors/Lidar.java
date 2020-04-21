@@ -9,6 +9,8 @@ import java.io.IOException;
 
 public class Lidar implements Sensor {
 
+    // TODO: make an abstract class for SerialSensors, it should have the baudrate and serial port as fields
+
     static final int TIMEOUT = 10000;
 
     private final String portSystemName;
@@ -56,9 +58,13 @@ public class Lidar implements Sensor {
         for (var p : ports) {
             if (p.getSystemPortName().equals(portSystemName)) {
                 port = p;
-                port.setBaudRate(115200);
+                port.setBaudRate(128000);
+                port.clearDTR();
+                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 port.openPort();
-                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use
+                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
+                port.setRTS();
+                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 return true;
             }
         }
@@ -76,6 +82,7 @@ public class Lidar implements Sensor {
 
     @Override
     public void terminate() {
+        port.writeBytes(new byte[] { (byte) 0xA5, (byte) 0x65 }, 2, 0); // Stops the motor and the scanner
         port.closePort(); // Should generate and error for the thread and close it
     }
 
@@ -88,42 +95,68 @@ public class Lidar implements Sensor {
     public void run() {
         running = true;
 
+        port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
+//        readDistanceReply();
         while (port.isOpen()) {
             int distance = getDistance();
+            port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
             server.sendToAllTCP(distance); // TODO: determine if TCP or UDP is better in this scenario
         }
     }
+
+//    public boolean readDistanceReply() {
+//        var stream = port.getInputStream();
+//
+//        while (true) {
+//            try {
+//                int header = stream.read();
+//                if (header != 0xA5) continue;
+//                header = stream.read();
+//                if (header != 0x5A) continue;
+//                while (true) {
+//                    System.out.println(Integer.toHexString(stream.read()));
+//                }
+//            } catch (IOException ex) {
+//                return false;
+//            }
+//        }
+//    }
 
     public int getDistance() { // See, I do sometimes write comments in my code :)
         var stream = port.getInputStream();
 
         while (true) { // I believe the port or the InputStream will throw an error if it does not work and the loop will be broken because of that
             try {
-                // Each 9 byte data package has 2 headers (both 0x59) followed by 2 bytes representing the distance
+                // The header is made up of two bytes 0xA5 and 0x5A
                 int header = stream.read();
-                while (header != 0x59) { // Continue reading until the package header is read
-                    header = stream.read();
-                }
+                if (header != 0xA5) continue;
                 header = stream.read();
-                if (header != 0x59) { // Make sure the next byte is also a header
-                    continue;
-                }
+                if (header != 0x5A) continue;
+                System.out.println("READ HEADER");
 
-                int sum = 0; // TODO: CheckSum is the low 8 bits of the cumulative sum of the numbers of the first 8 bytes.
+                // The way the length is read is very messed up,
+                int len = stream.read();
+                len = len  + (byte) stream.read() << 8;
+                len = len << 8 + (byte) stream.read();
+                len = len << 8 + (byte) stream.read();
+                int type = len & 0x3;
+                len = len >> 2;
 
-                // Finds the distance from the next 2 bytes
-                int distance = stream.read();
-                distance = distance + 256 * stream.read();
+                int packageType = stream.read();
+                int sampleQuantity = stream.read();
+                int startingAngle = stream.read();
+                startingAngle = startingAngle * 256 + stream.read();
+                int endAngle = stream.read();
+                endAngle = endAngle * 256 + stream.read();
+                int checkCode = stream.read();
+                checkCode = checkCode * 256 + stream.read();
+                int samplingData = stream.read();
+                samplingData = samplingData * 256 + stream.read();
 
-                int strength = stream.read();
-                strength = strength + 256 * stream.read();
-                int mode = stream.read();
-                int spare = stream.read();
-                int checkSum = stream.read();
+                return startingAngle;
 
-                return distance;
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 break;
             }
         }

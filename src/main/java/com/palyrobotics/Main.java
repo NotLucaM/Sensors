@@ -2,6 +2,7 @@ package com.palyrobotics;
 
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
+import com.palyrobotics.sensors.Lidar;
 import com.palyrobotics.sensors.Sensor;
 import com.palyrobotics.sensors.TimeOfFlightSensor;
 import com.esotericsoftware.kryonet.Client;
@@ -13,7 +14,7 @@ import java.util.List;
 public class Main {
 
     private static List<Sensor> mRunningSensors;
-    private static TimeOfFlightSensor timeOfFlight = new TimeOfFlightSensor("ttyUSB0", 5807);
+    private static Lidar timeOfFlight = new Lidar("ttyUSB0", 5807);
 
     static {
         mRunningSensors = List.of(timeOfFlight);
