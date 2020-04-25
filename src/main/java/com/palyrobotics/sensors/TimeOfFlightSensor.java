@@ -58,7 +58,7 @@ public class TimeOfFlightSensor implements Sensor {
                 port = p;
                 port.setBaudRate(115200);
                 port.openPort();
-                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use
+                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs
                 return true;
             }
         }

@@ -54,14 +54,15 @@ public class Lidar implements Sensor {
         }
     }
 
-    public boolean verifyPort() {
+    public void verifyPort() {
         if (port != null) {
-            return true;
+            return;
         }
 
         SerialPort[] ports = SerialPort.getCommPorts();
         for (var p : ports) {
             if (p.getSystemPortName().equals(portSystemName)) {
+                // After a lot of testing these are the settings that work
                 port = p;
                 port.clearDTR();
                 port.setRTS();
@@ -70,10 +71,9 @@ public class Lidar implements Sensor {
                 port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
                 port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 port.openPort();
-                return true;
+                return;
             }
         }
-        return false;
     }
 
     @Override
@@ -107,7 +107,7 @@ public class Lidar implements Sensor {
         }
     }
 
-    public void readHeader() {
+    public void readHeader() { // When you first write the command to start the motor, it will send a lot of redundant text first
         var stream = port.getInputStream();
 
         while (true) {
@@ -131,7 +131,7 @@ public class Lidar implements Sensor {
         var stream = port.getInputStream();
 
         try {
-            while (true) {
+            while (true) { // Makes sure the header is the first thing that is read
                 int header = (0xff & stream.read());
                 int h2 = stream.read() & 0xFF;
 
@@ -141,23 +141,27 @@ public class Lidar implements Sensor {
                 }
             }
 
+            // Packets follow this order: package type (1B), sample quantity (1B), starting angle (2B), ending angle (2B), check sum (2B),
+            // for the next sample quantity, there are 2B packets which represent the distance. The distances are equal angle measurements apart
+            // In 2 byte numbers, the first byte is always the least significant byte and the second byte is the most significant
             int packageType = stream.read();
             int sampleQuantity = stream.read();
-            float startingAngle = 0xFF & stream.read();
-            startingAngle = (startingAngle + ((0xFF & stream.read()) << 8)) / 128;
-            float endAngle = (0xFF & stream.read());
-            endAngle = (endAngle + ((0xFF & stream.read()) << 8)) / 128;
+            float startingAngle = stream.read();
+            startingAngle = (startingAngle + (stream.read() << 8)) / 128;
+            float endAngle = stream.read();
+            endAngle = (endAngle + (stream.read() << 8)) / 128;
+            // Increase the end angle by 360 when it is smaller than the starting angle to not have negative delta
             if (endAngle < startingAngle) {
                 endAngle += 360;
             }
+            // Each distance will be stepAngle apart starting from startingAngle
             float stepAngle = (endAngle - startingAngle) / (float) sampleQuantity;
             int checkCode = stream.read();
-            checkCode = checkCode << 8 + stream.read();
-            int samplingData = stream.read();
-            samplingData = samplingData << 8 + stream.read();
+            checkCode = checkCode << 8 + stream.read(); // TODO: actually use this
 
+            // Read and send the distances
             for (int i = 0; i < sampleQuantity; i++) {
-                int lsb = stream.read();
+                int lsb = stream.read(); // TODO: make this nice
                 int msb = stream.read();
 
                 float angle = startingAngle + stepAngle * i;

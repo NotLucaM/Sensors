@@ -14,10 +14,10 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class LidarOutputGraph extends Application {
 
+    // i guess naming conventions are a thing
     private final String host = "";
     private final int tcpPort = 5807;
 
@@ -51,7 +51,7 @@ public class LidarOutputGraph extends Application {
 
             @Override
             public void received(Connection connection, Object object) {
-                if (object instanceof float[]) {
+                if (object instanceof float[]) { // Filters out keepAlive messages
                     Platform.runLater(() ->
                         drawShapes((float[]) object));
                 };
@@ -63,11 +63,11 @@ public class LidarOutputGraph extends Application {
     }
 
     private void drawShapes(float[] polar) {
-        float[] cartesian = getCartesian(polar);
+        float[] cartesian = getCartesian(polar); // TODO: make more efficient
 
         root.getChildren().add(new Circle(cartesian[0] / 5 + 500, cartesian[1] / 5 + 500, 10));
         circleNumber += 1;
-        if (circleNumber > maxCircles) {
+        if (circleNumber > maxCircles) { // Deletes the oldest point after a certain amount of points are there
             root.getChildren().remove(0);
         }
     }
