@@ -127,7 +127,7 @@ public class Lidar implements Sensor {
         }
     }
 
-    public int getDistance() { // See, I do sometimes write comments in my code :)
+    public void getDistance() { // See, I do sometimes write comments in my code :)
         var stream = port.getInputStream();
 
         try {
@@ -143,21 +143,29 @@ public class Lidar implements Sensor {
 
             int packageType = stream.read();
             int sampleQuantity = stream.read();
-            int startingAngle = 0xFF & stream.read();
-            startingAngle = startingAngle + (0xFF & stream.read()) << 8;
-            System.out.print(" Starting angle: " + startingAngle);
-            int endAngle = (0xFF & stream.read());
-            endAngle = endAngle + (0xFF & stream.read()) << 8;
-            System.out.println(" Ending angle: " + endAngle);
+            float startingAngle = 0xFF & stream.read();
+            startingAngle = (startingAngle + ((0xFF & stream.read()) << 8)) / 128;
+            float endAngle = (0xFF & stream.read());
+            endAngle = (endAngle + ((0xFF & stream.read()) << 8)) / 128;
+            if (endAngle < startingAngle) {
+                endAngle += 360;
+            }
+            float stepAngle = (endAngle - startingAngle) / (float) sampleQuantity;
             int checkCode = stream.read();
             checkCode = checkCode << 8 + stream.read();
             int samplingData = stream.read();
             samplingData = samplingData << 8 + stream.read();
 
-            return startingAngle; // TODO: return something useful
-        } catch (IOException e) {
-        }
+            for (int i = 0; i < sampleQuantity; i++) {
+                int lsb = stream.read();
+                int msb = stream.read();
 
-        return -1;
+                float angle = startingAngle + stepAngle * i;
+                float distance = ((msb << 8) + lsb) / 4f;
+            }
+        } catch (IOException ex) {
+            System.err.println("Port not working correctly");
+            ex.printStackTrace();
+        }
     }
 }
