@@ -20,11 +20,7 @@ public class LidarOutputGraph extends Application {
 
     private final String host = "";
     private final int tcpPort = 5807;
-    private Client client;
-    private double pointRadius = 10;
-    private long lastClear;
 
-    private GraphicsContext gc;
     private Group root;
 
     private int circleNumber = 0;
@@ -38,9 +34,6 @@ public class LidarOutputGraph extends Application {
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Lidar Output");
         root = new Group();
-//        Canvas canvas = new Canvas(1500, 1500);
-//        gc = canvas.getGraphicsContext2D();
-//        root.getChildren().add(canvas);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
 
