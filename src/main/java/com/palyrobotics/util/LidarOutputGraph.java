@@ -4,11 +4,13 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -23,6 +25,10 @@ public class LidarOutputGraph extends Application {
     private long lastClear;
 
     private GraphicsContext gc;
+    private Group root;
+
+    private int circleNumber = 0;
+    private int maxCircles = 750;
 
     public static void main(String[] args) {
         launch(args);
@@ -31,10 +37,10 @@ public class LidarOutputGraph extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Lidar Output");
-        Group root = new Group();
-        Canvas canvas = new Canvas(1500, 1500);
-        gc = canvas.getGraphicsContext2D();
-        root.getChildren().add(canvas);
+        root = new Group();
+//        Canvas canvas = new Canvas(1500, 1500);
+//        gc = canvas.getGraphicsContext2D();
+//        root.getChildren().add(canvas);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
 
@@ -53,8 +59,9 @@ public class LidarOutputGraph extends Application {
             @Override
             public void received(Connection connection, Object object) {
                 if (object instanceof float[]) {
-                    drawShapes((float[]) object);
-                }
+                    Platform.runLater(() ->
+                        drawShapes((float[]) object));
+                };
             }
         });
         new Thread(client).start();
@@ -65,20 +72,14 @@ public class LidarOutputGraph extends Application {
     private void drawShapes(float[] polar) {
         float[] cartesian = getCartesian(polar);
 
-        gc.setFill(Color.RED);
-        gc.setStroke(Color.BLACK);
-
-        if (System.currentTimeMillis() - lastClear >= 1000) {
-            lastClear = System.currentTimeMillis();
-            gc.clearRect(0,0,1500,1500);
+        root.getChildren().add(new Circle(cartesian[0] / 5 + 500, cartesian[1] / 5 + 500, 10));
+        circleNumber += 1;
+        if (circleNumber > maxCircles) {
+            root.getChildren().remove(0);
         }
-
-        gc.fillOval((cartesian[0] - pointRadius) / 3 + 750,
-                (cartesian[1] - pointRadius) / 3 + 750,
-                pointRadius, pointRadius);
     }
 
-    public float[] getCartesian(float[] polar) {
+    public float[] getCartesian(float[] polar) { // float array is {angle, distance}, cartesian is {x, y} TODO: make more efficient by not creating a new array every time
         return new float[]{(float) (polar[1] * Math.cos(Math.toRadians(polar[0]))),
                 (float) (polar[1] * Math.sin(Math.toRadians(polar[0])))};
     }
