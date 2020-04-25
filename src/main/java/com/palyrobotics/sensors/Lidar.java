@@ -7,6 +7,10 @@ import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
 
+/*
+
+ */
+
 public class Lidar implements Sensor {
 
     // TODO: make an abstract class for SerialSensors, it should have the baudrate and serial port as fields
@@ -58,13 +62,13 @@ public class Lidar implements Sensor {
         for (var p : ports) {
             if (p.getSystemPortName().equals(portSystemName)) {
                 port = p;
-                port.setBaudRate(128000);
                 port.clearDTR();
+                port.setRTS();
+                port.setBaudRate(128000);
+                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
+                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
                 port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 port.openPort();
-                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
-                port.setRTS();
-                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 return true;
             }
         }
@@ -96,69 +100,58 @@ public class Lidar implements Sensor {
         running = true;
 
         port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
-//        readDistanceReply();
+        readHeader();
         while (port.isOpen()) {
             int distance = getDistance();
-            port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
             server.sendToAllTCP(distance); // TODO: determine if TCP or UDP is better in this scenario
         }
     }
 
-//    public boolean readDistanceReply() {
-//        var stream = port.getInputStream();
-//
-//        while (true) {
-//            try {
-//                int header = stream.read();
-//                if (header != 0xA5) continue;
-//                header = stream.read();
-//                if (header != 0x5A) continue;
-//                while (true) {
-//                    System.out.println(Integer.toHexString(stream.read()));
-//                }
-//            } catch (IOException ex) {
-//                return false;
-//            }
-//        }
-//    }
-
-    public int getDistance() { // See, I do sometimes write comments in my code :)
+    public void readHeader() {
         var stream = port.getInputStream();
 
-        while (true) { // I believe the port or the InputStream will throw an error if it does not work and the loop will be broken because of that
+        while (true) {
             try {
-                // The header is made up of two bytes 0xA5 and 0x5A
                 int header = stream.read();
                 if (header != 0xA5) continue;
                 header = stream.read();
                 if (header != 0x5A) continue;
-                System.out.println("READ HEADER");
-
-                // The way the length is read is very messed up,
-                int len = stream.read();
-                len = len  + (byte) stream.read() << 8;
-                len = len << 8 + (byte) stream.read();
-                len = len << 8 + (byte) stream.read();
-                int type = len & 0x3;
-                len = len >> 2;
-
-                int packageType = stream.read();
-                int sampleQuantity = stream.read();
-                int startingAngle = stream.read();
-                startingAngle = startingAngle * 256 + stream.read();
-                int endAngle = stream.read();
-                endAngle = endAngle * 256 + stream.read();
-                int checkCode = stream.read();
-                checkCode = checkCode * 256 + stream.read();
-                int samplingData = stream.read();
-                samplingData = samplingData * 256 + stream.read();
-
-                return startingAngle;
-
-            } catch (IOException e) {
-                //e.printStackTrace();
-                break;
+                int length = stream.read();
+                for (int i = 0; i < length - 1; i++) {
+                    stream.read();
+                }
+                return;
+            } catch (IOException ex) {
+                return;
             }
+        }
+    }
+
+    public int getDistance() { // See, I do sometimes write comments in my code :)
+        var stream = port.getInputStream();
+
+        try {
+            int header = (0xff & stream.read());
+            int h2 = stream.read() & 0xFF;
+
+            header = (h2 << 8) + header;
+            System.out.print(Integer.toHexString(header));
+
+            int packageType = stream.read();
+            int sampleQuantity = stream.read();
+            int startingAngle = 0xFF & stream.read();
+            startingAngle = startingAngle + (0xFF & stream.read()) << 8;
+            System.out.print(" Starting angle: " + startingAngle);
+            int endAngle = stream.read();
+            endAngle = endAngle << 8 + stream.read();
+            System.out.println("Ending angle: " + endAngle);
+            int checkCode = stream.read();
+            checkCode = checkCode << 8 + stream.read();
+            int samplingData = stream.read();
+            samplingData = samplingData << 8 + stream.read();
+
+            return startingAngle; // TODO: return something useful
+        } catch (IOException e) {
         }
 
         return -1;
