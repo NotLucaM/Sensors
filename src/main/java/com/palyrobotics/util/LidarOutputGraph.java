@@ -19,6 +19,10 @@ public class LidarOutputGraph extends Application {
     private final String host = "";
     private final int tcpPort = 5807;
     private Client client;
+    private double pointRadius = 10;
+    private long lastClear;
+
+    private GraphicsContext gc;
 
     public static void main(String[] args) {
         launch(args);
@@ -26,16 +30,15 @@ public class LidarOutputGraph extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        setUpClient();
-
         primaryStage.setTitle("Lidar Output");
         Group root = new Group();
-        Canvas canvas = new Canvas(500, 500);
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        drawShapes(gc);
+        Canvas canvas = new Canvas(1500, 1500);
+        gc = canvas.getGraphicsContext2D();
         root.getChildren().add(canvas);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
+
+        setUpClient();
     }
 
     private void setUpClient() throws IOException {
@@ -49,7 +52,9 @@ public class LidarOutputGraph extends Application {
 
             @Override
             public void received(Connection connection, Object object) {
-                System.out.println(Arrays.toString((float[]) object));
+                if (object instanceof float[]) {
+                    drawShapes((float[]) object);
+                }
             }
         });
         new Thread(client).start();
@@ -57,13 +62,24 @@ public class LidarOutputGraph extends Application {
         client.connect(4000, host, tcpPort);
     }
 
-    private void drawShapes(GraphicsContext gc) {
+    private void drawShapes(float[] polar) {
+        float[] cartesian = getCartesian(polar);
+
         gc.setFill(Color.RED);
         gc.setStroke(Color.BLACK);
-        gc.fillRoundRect(10, 110, 30, 30, 20, 25);
+
+        if (System.currentTimeMillis() - lastClear >= 1000) {
+            lastClear = System.currentTimeMillis();
+            gc.clearRect(0,0,1500,1500);
+        }
+
+        gc.fillOval((cartesian[0] - pointRadius) / 3 + 750,
+                (cartesian[1] - pointRadius) / 3 + 750,
+                pointRadius, pointRadius);
     }
 
     public float[] getCartesian(float[] polar) {
-        return new float[]{(float) (polar[1] * Math.cos(polar[0])), (float) (polar[1] * Math.sin(polar[0]))};
+        return new float[]{(float) (polar[1] * Math.cos(Math.toRadians(polar[0]))),
+                (float) (polar[1] * Math.sin(Math.toRadians(polar[0])))};
     }
 }
