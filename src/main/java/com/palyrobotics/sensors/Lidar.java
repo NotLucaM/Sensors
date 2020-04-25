@@ -131,20 +131,24 @@ public class Lidar implements Sensor {
         var stream = port.getInputStream();
 
         try {
-            int header = (0xff & stream.read());
-            int h2 = stream.read() & 0xFF;
+            while (true) {
+                int header = (0xff & stream.read());
+                int h2 = stream.read() & 0xFF;
 
-            header = (h2 << 8) + header;
-            System.out.print(Integer.toHexString(header));
+                header = (h2 << 8) + header;
+                if (header == 0x55AA) {
+                    break;
+                }
+            }
 
             int packageType = stream.read();
             int sampleQuantity = stream.read();
             int startingAngle = 0xFF & stream.read();
             startingAngle = startingAngle + (0xFF & stream.read()) << 8;
             System.out.print(" Starting angle: " + startingAngle);
-            int endAngle = stream.read();
-            endAngle = endAngle << 8 + stream.read();
-            System.out.println("Ending angle: " + endAngle);
+            int endAngle = (0xFF & stream.read());
+            endAngle = endAngle + (0xFF & stream.read()) << 8;
+            System.out.println(" Ending angle: " + endAngle);
             int checkCode = stream.read();
             checkCode = checkCode << 8 + stream.read();
             int samplingData = stream.read();
