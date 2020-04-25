@@ -8,6 +8,7 @@ import com.palyrobotics.sensors.TimeOfFlightSensor;
 import com.esotericsoftware.kryonet.Client;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 // A driver class for the rest mainly used for testing at the moment
@@ -25,6 +26,7 @@ public class Main {
 
 
         Client client = new Client();
+        client.getKryo().register(float[].class);
         client.addListener(new Listener() {
             @Override
             public void connected(Connection connection) {
@@ -33,7 +35,7 @@ public class Main {
 
             @Override
             public void received(Connection connection, Object object) {
-//                System.out.println(object);
+                System.out.println(Arrays.toString((float[]) object));
             }
         });
         new Thread(client).start();

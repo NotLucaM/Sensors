@@ -35,6 +35,7 @@ public class Lidar implements Sensor {
 
     private void setUpServer() { // TODO: maybe make Sensor an abstract class with this as it is similar to KumquatVision
         server.start();
+        server.getKryo().register(float[].class);
         server.addListener(new Listener() {
             @Override
             public void connected(Connection connection) {
@@ -102,8 +103,7 @@ public class Lidar implements Sensor {
         port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
         readHeader();
         while (port.isOpen()) {
-            int distance = getDistance();
-            server.sendToAllTCP(distance); // TODO: determine if TCP or UDP is better in this scenario
+            getDistance();
         }
     }
 
@@ -162,6 +162,8 @@ public class Lidar implements Sensor {
 
                 float angle = startingAngle + stepAngle * i;
                 float distance = ((msb << 8) + lsb) / 4f;
+
+                server.sendToAllTCP(new float[]{angle, distance}); // TODO: determine if TCP or UDP is better in this scenario
             }
         } catch (IOException ex) {
             System.err.println("Port not working correctly");
