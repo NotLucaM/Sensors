@@ -7,9 +7,6 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
@@ -53,7 +50,7 @@ public class LidarOutputGraph extends Application {
             public void received(Connection connection, Object object) {
                 if (object instanceof float[]) { // Filters out keepAlive messages
                     Platform.runLater(() ->
-                        drawShapes((float[]) object));
+                        drawShape((float[]) object)); // Still will send float arrays even if there is a point class because I believe they are more versatile
                 };
             }
         });
@@ -62,7 +59,7 @@ public class LidarOutputGraph extends Application {
         client.connect(4000, host, tcpPort);
     }
 
-    private void drawShapes(float[] polar) {
+    private void drawShape(float[] polar) {
         float[] cartesian = getCartesian(polar); // TODO: make more efficient
 
         root.getChildren().add(new Circle(cartesian[0] / 5 + 500, cartesian[1] / 5 + 500, 10));
@@ -72,6 +69,7 @@ public class LidarOutputGraph extends Application {
         }
     }
 
+    // TODO: Maybe I should use points here, but I use float arrays everywhere else in this class so idk?
     public float[] getCartesian(float[] polar) { // float array is {angle, distance}, cartesian is {x, y} TODO: make more efficient by not creating a new array every time
         return new float[]{(float) (polar[1] * Math.cos(Math.toRadians(polar[0]))),
                 (float) (polar[1] * Math.sin(Math.toRadians(polar[0])))};
