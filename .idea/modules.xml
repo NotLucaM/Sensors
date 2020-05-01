@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Kumquat-Vision.iml" filepath="$PROJECT_DIR$/.idea/modules/Kumquat-Vision.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Kumquat-Vision.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Kumquat-Vision.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Kumquat-Vision.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Kumquat-Vision.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/KumquatVision2.iml" filepath="$PROJECT_DIR$/.idea/KumquatVision2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/KumquatVision2.main.iml" filepath="$PROJECT_DIR$/.idea/modules/KumquatVision2.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/KumquatVision2.test.iml" filepath="$PROJECT_DIR$/.idea/modules/KumquatVision2.test.iml" />
     </modules>
   </component>
 </project>
