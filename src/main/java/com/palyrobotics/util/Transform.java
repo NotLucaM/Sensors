@@ -24,4 +24,10 @@ public class Transform {
 
 //    public PointCloud apply(PointCloud t) {
 //    }
+
+    public Transform inverse() {
+        return new Transform(-theta,
+                -tx * Math.cos(theta) - ty * Math.sin(theta),
+                tx * Math.sin(theta) - ty * Math.cos(theta));
+    }
 }
