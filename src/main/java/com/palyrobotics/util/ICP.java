@@ -5,6 +5,11 @@ public class ICP {
     private PointCloud reference; // The field
     private long timeout; // Timeout for each call of doICP in nano seconds
 
+    public ICP(PointCloud reference, long timeout) {
+        this.reference = reference;
+        this.timeout = timeout;
+    }
+
     public Transform doICP(PointCloud lidarOutput) {
         return doICP(lidarOutput, new Transform());
     }
@@ -14,7 +19,7 @@ public class ICP {
         long startingTime = System.nanoTime();
         double lastMeanDist = Double.POSITIVE_INFINITY;
 
-        while (startingTime - System.nanoTime() <= timeout) {
+        while (System.nanoTime() - startingTime <= timeout) {
             final Transform transInv = transform.inverse();
 
             final double threshold = lastMeanDist;
@@ -79,8 +84,8 @@ public class ICP {
     }
 
     private boolean isConverged(Transform prev, Transform cur) {
-        return Math.abs(prev.theta - cur.theta) < 0.01 && // TODO: magic numbers...
-                Math.abs(prev.tx - cur.tx) < 0.01 &&
-                Math.abs(prev.ty - cur.ty) < 0.01;
+        return Math.abs(prev.theta - cur.theta) < 0.001 && // TODO: magic numbers...
+                Math.abs(prev.tx - cur.tx) < 0.001 &&
+                Math.abs(prev.ty - cur.ty) < 0.001;
     }
 }

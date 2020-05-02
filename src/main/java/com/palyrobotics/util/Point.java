@@ -10,7 +10,7 @@ public class Point {
     }
 
     public double distanceTo(Point p) {
-        return Math.sqrt(Math.pow(x + p.x, 2) + Math.pow(y + p.y, 2));
+        return Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2));
     }
 
     public static Point fromPolar(float[] point) {
@@ -19,5 +19,10 @@ public class Point {
 
     public static Point fromPolar(double[] point) {
         return new Point(point[1] * Math.cos(Math.toRadians(point[0])), point[1] * Math.sin(Math.toRadians(point[0])));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%f %f", x, y);
     }
 }

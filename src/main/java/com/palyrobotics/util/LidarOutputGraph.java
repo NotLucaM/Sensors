@@ -62,7 +62,7 @@ public class LidarOutputGraph extends Application {
     private void drawShape(float[] polar) {
         float[] cartesian = getCartesian(polar); // TODO: make more efficient
 
-        root.getChildren().add(new Circle(cartesian[0] / 5 + 500, cartesian[1] / 5 + 500, 10));
+        root.getChildren().add(new Circle(cartesian[0] / 5 + 750, cartesian[1] / 5 + 750, 10));
         circleNumber += 1;
         if (circleNumber > maxCircles) { // Deletes the oldest point after a certain amount of points are there
             root.getChildren().remove(0);

@@ -18,8 +18,8 @@ public class Transform {
 
     // The following functions apply the transform onto various classes
     public Point apply(Point t) {
-        return new Point(t.x * Math.cos(theta)- t.y * Math.sin(theta),
-                        t.x * Math.sin(theta) - t.y * Math.cos(theta));
+        return new Point(t.x * Math.cos(theta) - t.y * Math.sin(theta) + tx,
+                t.x * Math.sin(theta) + t.y * Math.cos(theta) + ty);
     }
 
 //    public PointCloud apply(PointCloud t) {
@@ -29,5 +29,10 @@ public class Transform {
         return new Transform(-theta,
                 -tx * Math.cos(theta) - ty * Math.sin(theta),
                 tx * Math.sin(theta) - ty * Math.cos(theta));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%.1f, %.1f) %.1f", tx, ty, theta);
     }
 }
