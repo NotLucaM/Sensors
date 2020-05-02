@@ -24,7 +24,7 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, IOException {
         mRunningSensors.forEach(Sensor::init);
 
-
+        // Very rushed way to test out ICP
         Client client = new Client();
         client.getKryo().register(float[].class);
         client.addListener(new Listener() {
