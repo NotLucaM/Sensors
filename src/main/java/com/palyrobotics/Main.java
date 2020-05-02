@@ -11,9 +11,7 @@ import com.palyrobotics.util.Point;
 import com.palyrobotics.util.PointCloud;
 import com.palyrobotics.util.Transform;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,9 +23,10 @@ public class Main {
 
     // Rushed
     public static PointCloud pc = new PointCloud();
-    private static int reps = 0;
     private static ICP icp;
     private static Transform lastTransform = new Transform();
+    private static float lastAngle = 0;
+    private static long timeout = 10000000; // 10ms ik
 
     static {
         mRunningSensors = List.of(timeOfFlight);
@@ -49,33 +48,39 @@ public class Main {
 
             @Override
             public void received(Connection connection, Object object) {
-//                System.out.printf("%.0f%n", ((float[]) object)[0]); // {angle, distance}
-                addPoint((float[]) object);
-                fout.printf("%.3f,%.3f%n", ((float[]) object)[0], ((float[]) object)[1]);
+                if (object instanceof float[]) { // Java 14 when?
+                    addPoint(((float[]) object)[0], ((float[]) object)[1]);
+                }
             }
         });
         new Thread(client).start();
 
+        BufferedReader bf = new BufferedReader(new FileReader("test1cycle.txt"));
+        PointCloud reference = new PointCloud();
+        while (true) {
+            String line = bf.readLine();
+
+            if (line == null) {
+                break;
+            }
+
+            var split = line.split(",");
+            reference.addPoint(Point.fromPolar(new float[]{Float.parseFloat(split[0]),
+                                                            Float.parseFloat(split[1])}));
+        }
+        icp = new ICP(reference, timeout);
+
         client.connect(4000, "127.0.0.1", 5807);
     }
 
-
-
-
     // very rushed, TODO: un-rush this
-    public static void addPoint(float[] object) {
-        if ((int) object[0] == 0 && pc.size() >= 10) {
-            if (reps == 20) {
-                System.out.println("ICP Set");
-                icp = new ICP(pc, 5000000);
-            }
-            if (icp != null) {
-                lastTransform = icp.doICP(pc, lastTransform);
-                System.out.println(lastTransform);
-            }
+    public static void addPoint(float theta, float r) {
+        if (lastAngle > theta) {
+            lastTransform = icp.doICP(pc, lastTransform);
+            System.out.println(lastTransform);
             pc = new PointCloud();
-            reps++;
         }
-        pc.addPoint(Point.fromPolar(object));
+        pc.addPoint(Point.fromPolar(theta, r));
+        lastAngle = theta;
     }
 }
