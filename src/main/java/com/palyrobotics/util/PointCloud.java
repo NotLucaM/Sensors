@@ -28,6 +28,10 @@ public class PointCloud implements Iterable<Point> {
         return closestPoint;
     }
 
+    public void addPoint(Point point) {
+        points.add(point);
+    }
+
     @Override
     public Iterator<Point> iterator() {
         return points.iterator();
