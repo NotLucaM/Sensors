@@ -35,11 +35,18 @@ public class Main {
 
             @Override
             public void received(Connection connection, Object object) {
-                System.out.println(Arrays.toString((float[]) object));
+                System.out.printf("%.0f%n", ((float[]) object)[0]);
             }
         });
         new Thread(client).start();
 
         client.connect(4000, "127.0.0.1", 5807);
+    }
+
+
+
+    // very rushed, TODO: un-rush this
+    public static void addPoint(float[] object) {
+
     }
 }
