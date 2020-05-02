@@ -6,6 +6,8 @@ import com.palyrobotics.sensors.Lidar;
 import com.palyrobotics.sensors.Sensor;
 import com.palyrobotics.sensors.TimeOfFlightSensor;
 import com.esotericsoftware.kryonet.Client;
+import com.palyrobotics.util.Point;
+import com.palyrobotics.util.PointCloud;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,6 +18,8 @@ public class Main {
 
     private static List<Sensor> mRunningSensors;
     private static Lidar timeOfFlight = new Lidar("ttyUSB0", 5807);
+
+    public static PointCloud pc = new PointCloud();
 
     static {
         mRunningSensors = List.of(timeOfFlight);
@@ -35,7 +39,8 @@ public class Main {
 
             @Override
             public void received(Connection connection, Object object) {
-                System.out.printf("%.0f%n", ((float[]) object)[0]);
+//                System.out.printf("%.0f%n", ((float[]) object)[0]); // {angle, distance}
+                addPoint((float[]) object);
             }
         });
         new Thread(client).start();
@@ -47,6 +52,12 @@ public class Main {
 
     // very rushed, TODO: un-rush this
     public static void addPoint(float[] object) {
-
+        if ((int) object[0] == 0) {
+            System.out.println(pc.size());
+            pc = new PointCloud();
+        }
+        if (!pc.contains(new Point((int) object[0], (int) object[1]))) {
+            pc.addPoint(new Point((int) object[0], (int) object[1]));
+        }
     }
 }

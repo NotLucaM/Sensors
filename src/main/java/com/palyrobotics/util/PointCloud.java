@@ -1,18 +1,20 @@
 package com.palyrobotics.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class PointCloud implements Iterable<Point> {
 
-    private List<Point> points;
+    private ArrayList<Point> points;
 
     public PointCloud(Point... points) {
-        this.points = List.of(points);
+        this.points = new ArrayList<Point>(Arrays.asList(points));
     }
 
-    public PointCloud(List<Point> points) {
+    public PointCloud(ArrayList<Point> points) {
         this.points = points;
     }
 
@@ -26,6 +28,19 @@ public class PointCloud implements Iterable<Point> {
             }
         }
         return closestPoint;
+    }
+
+    public boolean contains(Point point) {
+        for (Point p : points) {
+            if (point.y == p.y && point.x == p.x) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int size() {
+        return points.size();
     }
 
     public void addPoint(Point point) {
