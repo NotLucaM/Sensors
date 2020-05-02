@@ -56,7 +56,7 @@ public class Main {
             System.out.println(pc.size());
             pc = new PointCloud();
         }
-        if (!pc.contains(new Point((int) object[0], (int) object[1]))) {
+        if (!pc.contains(Point.fromPolar(object))) {
             pc.addPoint(new Point((int) object[0], (int) object[1]));
         }
     }
