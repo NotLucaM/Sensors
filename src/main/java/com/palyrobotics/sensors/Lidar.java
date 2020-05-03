@@ -18,10 +18,10 @@ public class Lidar implements Sensor {
     static final int TIMEOUT = 10000;
 
     private final String description;
-    private SerialPort port;
-    private boolean running;
-    private Server server;
+    private final Server server;
     private final int tcpPort;
+    private SerialPort serialPort;
+    private boolean running;
 
     public Lidar(String description, int tcpPort)  {
         this.description = description;
@@ -55,7 +55,7 @@ public class Lidar implements Sensor {
     }
 
     public void verifyPort() {
-        if (port != null) {
+        if (serialPort != null) {
             return;
         }
 
@@ -63,14 +63,14 @@ public class Lidar implements Sensor {
         for (var p : ports) {
             if (p.getSystemPortName().contains(description) || p.getDescriptivePortName().contains(description)) {
                 // After a lot of testing these are the settings that work
-                port = p;
-                port.clearDTR();
-                port.setRTS();
-                port.setBaudRate(128000);
-                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
-                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
-                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
-                port.openPort();
+                serialPort = p;
+                serialPort.clearDTR();
+                serialPort.setRTS();
+                serialPort.setBaudRate(128000);
+                serialPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
+                serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
+                serialPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
+                serialPort.openPort();
                 return;
             }
         }
@@ -80,15 +80,15 @@ public class Lidar implements Sensor {
     public void init() {
         verifyPort();
 
-        if (port != null && !running) {
+        if (serialPort != null && !running) {
             new Thread(this).start();
         }
     }
 
     @Override
     public void terminate() {
-        port.writeBytes(new byte[] { (byte) 0xA5, (byte) 0x65 }, 2, 0); // Stops the motor and the scanner
-        port.closePort(); // Should generate and error for the thread and close it
+        serialPort.writeBytes(new byte[] { (byte) 0xA5, (byte) 0x65 }, 2, 0); // Stops the motor and the scanner
+        serialPort.closePort(); // Should generate and error for the thread and close it
     }
 
     @Override
@@ -100,15 +100,15 @@ public class Lidar implements Sensor {
     public void run() {
         running = true;
 
-        port.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
+        serialPort.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
         readHeader();
-        while (port.isOpen()) {
+        while (serialPort.isOpen()) {
             getDistance();
         }
     }
 
     public void readHeader() { // When you first write the command to start the motor, it will send a lot of redundant text first
-        var stream = port.getInputStream();
+        var stream = serialPort.getInputStream();
 
         while (true) {
             try {
@@ -128,7 +128,7 @@ public class Lidar implements Sensor {
     }
 
     public void getDistance() { // See, I do sometimes write comments in my code :)
-        var stream = port.getInputStream();
+        var stream = serialPort.getInputStream();
 
         try {
             while (true) { // Makes sure the header is the first thing that is read
@@ -167,7 +167,6 @@ public class Lidar implements Sensor {
                 float angle = startingAngle + stepAngle * i;
                 float distance = ((msb << 8) + lsb) / 4f;
 
-                System.out.println(angle + " " + distance);
                 server.sendToAllTCP(new float[]{angle > 360 ? angle - 360 : angle, distance}); // the lidar sometimes gives angles above 360, idk why? TODO: determine if TCP or UDP is better in this scenario
             }
         } catch (IOException ex) {

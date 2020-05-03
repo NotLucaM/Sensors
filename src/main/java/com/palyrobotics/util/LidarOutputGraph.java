@@ -15,7 +15,7 @@ import java.io.IOException;
 public class LidarOutputGraph extends Application {
 
     // i guess naming conventions are a thing
-    private final String host = "";
+    private final String host = "10.1.10.205";
     private final int tcpPort = 5807;
 
     private Group root;
