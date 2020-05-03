@@ -1,27 +1,30 @@
 package com.palyrobotics;
 
-import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.palyrobotics.sensors.Lidar;
 import com.palyrobotics.sensors.Sensor;
+import com.palyrobotics.sensors.TimeOfFlightSensor;
+import com.esotericsoftware.kryonet.Client;
 import com.palyrobotics.util.ICP;
 import com.palyrobotics.util.Point;
 import com.palyrobotics.util.PointCloud;
 import com.palyrobotics.util.Transform;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.lang.ref.Reference;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Map.of;
 
 // A driver class for the rest mainly used for testing at the moment
 public class Testing {
 
     private static List<Sensor> mRunningSensors;
-    private static Lidar timeOfFlight = new Lidar("ttyUSB0", 5807);
+    private static Lidar timeOfFlight = new Lidar("cp210x", 5807);
 
     // Rushed
     public static PointCloud pc = new PointCloud();

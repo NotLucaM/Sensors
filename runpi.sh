@@ -1,1 +1,1 @@
-java -cp Kumquat-Vision-1.0-SNAPSHOT.jar com.palyrobotics.Main
+java -cp Kumquat-Vision-1.0-SNAPSHOT.jar com.palyrobotics.LidarServer

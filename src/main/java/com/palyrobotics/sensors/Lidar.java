@@ -17,14 +17,14 @@ public class Lidar implements Sensor {
 
     static final int TIMEOUT = 10000;
 
-    private final String portSystemName;
+    private final String description;
     private SerialPort port;
     private boolean running;
     private Server server;
     private final int tcpPort;
 
-    public Lidar(String portSystemName, int tcpPort)  {
-        this.portSystemName = portSystemName;
+    public Lidar(String description, int tcpPort)  {
+        this.description = description;
         this.running = false;
         this.server = new Server();
         this.tcpPort = tcpPort;
@@ -61,7 +61,7 @@ public class Lidar implements Sensor {
 
         SerialPort[] ports = SerialPort.getCommPorts();
         for (var p : ports) {
-            if (p.getSystemPortName().equals(portSystemName)) {
+            if (p.getSystemPortName().contains(description) || p.getDescriptivePortName().contains(description)) {
                 // After a lot of testing these are the settings that work
                 port = p;
                 port.clearDTR();
@@ -167,6 +167,7 @@ public class Lidar implements Sensor {
                 float angle = startingAngle + stepAngle * i;
                 float distance = ((msb << 8) + lsb) / 4f;
 
+                System.out.println(angle + " " + distance);
                 server.sendToAllTCP(new float[]{angle > 360 ? angle - 360 : angle, distance}); // the lidar sometimes gives angles above 360, idk why? TODO: determine if TCP or UDP is better in this scenario
             }
         } catch (IOException ex) {
