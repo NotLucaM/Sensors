@@ -1,0 +1,1 @@
+./gradlew jar && scp build/libs/Kumquat-Vision*.jar "$USER"@"$1":

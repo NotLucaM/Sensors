@@ -1,3 +1,0 @@
-steps:
-  - label: ':hammer: Building'
-    command: 'chmod +x gradlew && ./gradlew build'
