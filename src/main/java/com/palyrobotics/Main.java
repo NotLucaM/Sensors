@@ -12,8 +12,13 @@ import com.palyrobotics.util.PointCloud;
 import com.palyrobotics.util.Transform;
 
 import java.io.*;
+import java.lang.ref.Reference;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static java.util.Map.of;
 
 // A driver class for the rest mainly used for testing at the moment
 public class Main {
@@ -69,7 +74,7 @@ public class Main {
             reference.addPoint(Point.fromPolar(new float[]{Float.parseFloat(split[0]),
                                                             Float.parseFloat(split[1])}));
         }
-        icp = new ICP(reference, timeout);
+        icp = new ICP(timeout, new HashMap<>(Map.of(reference, new Transform())));
 
         client.connect(4000, "127.0.0.1", 5807);
     }

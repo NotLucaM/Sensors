@@ -5,12 +5,14 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ICPTest {
 
     @Test
     public void doICP() throws IOException {
-        BufferedReader bf = new BufferedReader(new FileReader("in.txt"));
+        BufferedReader bf = new BufferedReader(new FileReader("test1cycle.txt"));
 
         PointCloud reference = new PointCloud();
         PointCloud pc = new PointCloud();
@@ -33,7 +35,7 @@ public class ICPTest {
         }
 
         long timeout = 10000000; // for debugging
-        ICP icp = new ICP(reference, timeout);
+        ICP icp = new ICP(timeout, new HashMap<>(Map.of(reference, new Transform())));
         System.out.println(icp.doICP(pc, new Transform(0, -40, -4))); // The reason you can give it a Transform is because you most likely will know your last position
     }
 }

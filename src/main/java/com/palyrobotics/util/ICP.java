@@ -1,20 +1,26 @@
 package com.palyrobotics.util;
 
+import java.util.HashMap;
+
 public class ICP {
 
-    private PointCloud reference; // The field
+    private HashMap<PointCloud, Transform> references; // The field
     private long timeout; // Timeout for each call of doICP in nano seconds
 
-    public ICP(PointCloud reference, long timeout) {
-        this.reference = reference;
+    public ICP(long timeout, HashMap<PointCloud, Transform> reference) {
         this.timeout = timeout;
-    }
-
-    public Transform doICP(PointCloud lidarOutput) {
-        return doICP(lidarOutput, new Transform());
+        this.references = reference;
     }
 
     public Transform doICP(PointCloud lidarOutput, Transform transform) {
+        HashMap<PointCloud, Transform> transforms = new HashMap<>();
+        for (PointCloud reference : references.keySet()) {
+            transforms.put(reference, doICP(reference, lidarOutput, transform));
+        }
+        return getClosestMatch(transforms, lidarOutput);
+    }
+
+    private Transform doICP(PointCloud reference, PointCloud lidarOutput, Transform transform) {
         // https://github.com/Team254/FRC-2018-Public/blob/master/src/main/java/com/team254/frc2018/Constants.java#L56
         long startingTime = System.nanoTime();
         double lastMeanDist = Double.POSITIVE_INFINITY;
@@ -81,6 +87,29 @@ public class ICP {
             }
         }
         return transform;
+    }
+
+    private Transform getClosestMatch(HashMap<PointCloud, Transform> transforms, PointCloud lidarOutput) {
+        double minDistance = Double.POSITIVE_INFINITY;
+        Transform closestTransform = null;
+
+        for (var entry : transforms.entrySet()) {
+            var reference = entry.getKey();
+            var transform = entry.getValue();
+            double totalDifference = 0;
+            for (Point point : lidarOutput) {
+                var transformedPoint = transform.apply(point);
+                var closestPoint = reference.getClosestPoint(transformedPoint);
+                totalDifference += closestPoint.distanceTo(transformedPoint);
+            }
+
+            if (totalDifference < minDistance) {
+                minDistance = totalDifference;
+                closestTransform = transform;
+            }
+        }
+
+        return closestTransform;
     }
 
     private boolean isConverged(Transform prev, Transform cur) {
