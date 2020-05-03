@@ -41,6 +41,9 @@
 # CMake
 cmake-build-*/
 
+# Lidar scans
+lidar-scans
+
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
 

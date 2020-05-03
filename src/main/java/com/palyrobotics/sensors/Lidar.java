@@ -29,8 +29,8 @@ public class Lidar implements Sensor {
         this.server = new Server();
         this.tcpPort = tcpPort;
 
+        openPort();
         setUpServer();
-        verifyPort();
     }
 
     private void setUpServer() { // TODO: maybe make Sensor an abstract class with this as it is similar to KumquatVision
@@ -54,7 +54,7 @@ public class Lidar implements Sensor {
         }
     }
 
-    public void verifyPort() {
+    public void openPort() {
         if (serialPort != null) {
             return;
         }
@@ -69,8 +69,12 @@ public class Lidar implements Sensor {
                 serialPort.setBaudRate(128000);
                 serialPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, TIMEOUT, TIMEOUT); // TODO: Find out if timeout is in secs, and what timeout method to use                //port.clearDTR();
-                serialPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
                 serialPort.openPort();
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 return;
             }
         }
@@ -78,8 +82,6 @@ public class Lidar implements Sensor {
 
     @Override
     public void init() {
-        verifyPort();
-
         if (serialPort != null && !running) {
             new Thread(this).start();
         }
@@ -99,6 +101,8 @@ public class Lidar implements Sensor {
     @Override
     public void run() {
         running = true;
+
+        openPort();
 
         serialPort.writeBytes(new byte[] {(byte) 0xA5, (byte) 0x60 }, 2, 0); // Starts the motor and the scanner
         readHeader();
