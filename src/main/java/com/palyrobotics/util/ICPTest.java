@@ -10,12 +10,12 @@ public class ICPTest {
 
     @Test
     public void doICP() throws IOException {
-        BufferedReader bf = new BufferedReader(new FileReader("test1cycle.txt"));
+        BufferedReader bf = new BufferedReader(new FileReader("in.txt"));
 
         PointCloud reference = new PointCloud();
         PointCloud pc = new PointCloud();
 
-        while (true) {
+        for (int i = 1; i <= 84; i++) {
             String line = bf.readLine();
 
             if (line == null) {
@@ -23,17 +23,17 @@ public class ICPTest {
             }
 
             var split = line.split(",");
-            reference.addPoint(Point.fromPolar(new float[]{Float.parseFloat(split[0]),
-                                                    Float.parseFloat(split[1])}));
+            reference.addPoint(new Point(Float.parseFloat(split[0]),
+                                         Float.parseFloat(split[1])));
 
-            var p = Point.fromPolar(new float[]{Float.parseFloat(split[0]),
-                    Float.parseFloat(split[1])});
+            Point p = new Point(Float.parseFloat(split[0]) - 50,
+                              Float.parseFloat(split[1]) - 10);
 
             pc.addPoint(p);
         }
 
-        long timeout = 100000; // for debugging
+        long timeout = 10000000; // for debugging
         ICP icp = new ICP(reference, timeout);
-        System.out.println(icp.doICP(pc));
+        System.out.println(icp.doICP(pc, new Transform(0, -40, -4))); // The reason you can give it a Transform is because you most likely will know your last position
     }
 }

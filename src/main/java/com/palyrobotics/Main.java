@@ -35,7 +35,7 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, IOException {
         mRunningSensors.forEach(Sensor::init);
 
-        PrintWriter fout = new PrintWriter(new FileWriter("in.txt"));
+//        PrintWriter fout = new PrintWriter(new FileWriter("out.txt"));
 
         // Very rushed way to test out ICP
         Client client = new Client();
@@ -50,12 +50,13 @@ public class Main {
             public void received(Connection connection, Object object) {
                 if (object instanceof float[]) { // Java 14 when?
                     addPoint(((float[]) object)[0], ((float[]) object)[1]);
+//                    fout.printf("%f,%f%n", ((float[]) object)[0], ((float[]) object)[1]);
                 }
             }
         });
         new Thread(client).start();
 
-        BufferedReader bf = new BufferedReader(new FileReader("test1cycle.txt"));
+        BufferedReader bf = new BufferedReader(new FileReader("out.txt"));
         PointCloud reference = new PointCloud();
         while (true) {
             String line = bf.readLine();
