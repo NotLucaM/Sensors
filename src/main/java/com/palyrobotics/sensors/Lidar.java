@@ -171,7 +171,16 @@ public class Lidar implements Sensor {
                 float angle = startingAngle + stepAngle * i;
                 float distance = ((msb << 8) + lsb) / 4f;
 
-                server.sendToAllTCP(new float[]{angle > 360 ? angle - 360 : angle, distance}); // the lidar sometimes gives angles above 360, idk why? TODO: determine if TCP or UDP is better in this scenario
+                var msg = new float[]{angle > 360 ? angle - 360 : angle, distance};  // the lidar sometimes gives angles above 360, idk why?
+                var connectionList = server.getConnections();
+                for (var connection: connectionList) { // I know sendTCPToAll exists, but it gave bugs so...
+                    try {
+                        server.sendToTCP(connection.getID(), msg); // TODO: determine if TCP or UDP is better in this scenario
+                    } catch (Throwable t) {
+                        System.err.println("Closing " + connection.getID());
+                        connection.close();
+                    }
+                }
             }
         } catch (IOException ex) {
             System.err.println("Port not working correctly");

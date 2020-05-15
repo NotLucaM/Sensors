@@ -1,4 +1,4 @@
-package com.palyrobotics.util;
+package com.palyrobotics;
 
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;

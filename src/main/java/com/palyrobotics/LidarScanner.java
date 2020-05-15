@@ -32,7 +32,7 @@ public class LidarScanner {
         mRunningSensors = List.of(lidar);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         mRunningSensors.forEach(Sensor::init);
 
         Client client = new Client();
@@ -51,13 +51,14 @@ public class LidarScanner {
             }
         });
         new Thread(client).start();
+        client.connect(4000, "10.1.10.205", 5807);
 
         Scanner in = new Scanner(System.in);
         while (true) {
-            var nextString = in.next();
+            var nextString = in.nextLine();
             StringTokenizer command = new StringTokenizer(nextString);
 
-            if (command.countTokens() == 2 && command.nextElement() == "scan") {
+            if (command.countTokens() == 2 && command.nextElement().equals("scan")) {
                 PrintWriter out = null;
                 try {
                     out = new PrintWriter(new FileWriter("lidar-scans/" + command.nextElement()));
