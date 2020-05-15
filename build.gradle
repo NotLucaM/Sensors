@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.8'
 }
 
 group 'frc8'
@@ -13,6 +14,10 @@ compileJava {
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
 
+javafx {
+    modules = ['javafx.controls']
+}
+
 repositories {
     mavenCentral()
     maven { url "https://clojars.org/repo" }
@@ -23,6 +28,7 @@ dependencies {
     compile 'com.esotericsoftware:kryo:4.0.2'
     compile 'net.sourceforge.argparse4j:argparse4j:0.8.1'
     compile 'com.fasterxml:jackson-module-json-org:0.9.1'
+    implementation 'org.gillius:jfxutils:1.0'
     compile fileTree(dir: 'lib', include: ['*.jar'])
 }
 
